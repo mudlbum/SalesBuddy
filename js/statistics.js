@@ -1,20 +1,17 @@
 /**
  * @fileoverview Utility functions for advanced statistical calculations.
- * This module provides robust functions for correlation analysis across multiple datasets.
+ * This module provides functions for correlation and regression analysis.
  */
 
 /**
  * Calculates the Pearson correlation coefficient between two arrays of numbers.
- * This version includes checks for variance to avoid misleading results.
  * @param {number[]} x - The first array of numbers.
  * @param {number[]} y - The second array of numbers.
- * @returns {number} The Pearson correlation coefficient, a value between -1 and 1. Returns 0 if calculation is not possible.
+ * @returns {number} The Pearson correlation coefficient, between -1 and 1.
  */
 function calculatePearsonCorrelation(x, y) {
     const n = x.length;
-    if (n < 2 || n !== y.length) {
-        return 0; // Correlation requires at least 2 data points and equal length arrays.
-    }
+    if (n < 2 || n !== y.length) return 0;
 
     const sumX = x.reduce((a, b) => a + b, 0);
     const sumY = y.reduce((a, b) => a + b, 0);
@@ -23,46 +20,72 @@ function calculatePearsonCorrelation(x, y) {
     const sumY2 = y.map(yi => yi * yi).reduce((a, b) => a + b, 0);
 
     const numerator = n * sumXY - sumX * sumY;
-    const denominatorX = n * sumX2 - sumX * sumX;
-    const denominatorY = n * sumY2 - sumY * sumY;
+    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
 
-    // If one of the series has zero variance (all values are the same), correlation is not meaningful.
-    if (denominatorX === 0 || denominatorY === 0) {
-        return 0;
-    }
-
-    const denominator = Math.sqrt(denominatorX * denominatorY);
-
-    return denominator === 0 ? 0 : numerator / denominator;
+    if (denominator === 0) return 0;
+    return numerator / denominator;
 }
 
 /**
- * Finds the best lagged correlation between two time series.
- * This helps identify delayed effects (e.g., does a rainy day affect sales 3 days later?).
+ * Calculates the correlation between two time series at different time lags.
  * @param {number[]} primarySeries - The main series (e.g., sales).
  * @param {number[]} secondarySeries - The series to test for correlation (e.g., temperature).
- * @param {number} maxLag - The maximum number of days/periods to shift the secondary series.
- * @returns {{lag: number, correlation: number}} An object with the lag and correlation that has the highest absolute value.
+ * @param {number} maxLag - The maximum number of days to shift the secondary series.
+ * @returns {{lag: number, correlation: number}[]} An array of objects with the lag and correlation.
  */
-export function findBestLaggedCorrelation(primarySeries, secondarySeries, maxLag = 14) {
-    let bestResult = { lag: 0, correlation: 0 };
-
+export function calculateLaggedCorrelation(primarySeries, secondarySeries, maxLag) {
+    const results = [];
     for (let lag = 0; lag <= maxLag; lag++) {
-        // Create lagged version of the secondary series by taking a slice from the beginning
         const laggedSecondary = secondarySeries.slice(0, secondarySeries.length - lag);
-        
-        // Align the primary series by removing elements from the start to match the lagged series
         const alignedPrimary = primarySeries.slice(lag);
 
-        if (alignedPrimary.length > 1) { // Ensure there are enough points to compare
+        if (alignedPrimary.length > 1) {
             const correlation = calculatePearsonCorrelation(alignedPrimary, laggedSecondary);
-            
-            // If the absolute correlation of the current lag is stronger than the best one found so far, update it.
-            if (Math.abs(correlation) > Math.abs(bestResult.correlation)) {
-                bestResult = { lag, correlation };
-            }
+            results.push({ lag, correlation: isNaN(correlation) ? 0 : correlation });
+        } else {
+            results.push({ lag, correlation: 0 });
         }
     }
-    return bestResult;
+    return results;
+}
+
+/**
+ * Finds the single weather variable with the highest absolute correlation for a given SKU.
+ * @param {Array<Object>} skuData - The joined sales and weather data for a single SKU.
+ * @param {Array<string>} weatherVariables - The weather metrics to test (e.g., ['avg_temp_c', 'precip_mm']).
+ * @returns {Object|null} The best correlation found, or null if none are significant.
+ */
+export function findTopWeatherCorrelation(skuData, weatherVariables) {
+    let topCorrelation = null;
+    let maxCorrelation = 0;
+
+    const salesSeries = skuData.map(d => d.sales);
+
+    weatherVariables.forEach(variable => {
+        const weatherSeries = skuData.map(d => d[variable] || 0);
+        const laggedResults = calculateLaggedCorrelation(salesSeries, weatherSeries, 14);
+
+        const bestLagResult = laggedResults.reduce((best, current) =>
+            Math.abs(current.correlation) > Math.abs(best.correlation) ? current : best, 
+            { lag: 0, correlation: 0 }
+        );
+
+        if (Math.abs(bestLagResult.correlation) > Math.abs(maxCorrelation)) {
+            maxCorrelation = bestLagResult.correlation;
+            topCorrelation = {
+                sku: skuData[0].sku,
+                weatherVariable: variable,
+                bestLag: bestLagResult.lag,
+                correlation: bestLagResult.correlation
+            };
+        }
+    });
+
+    // Only return if the correlation is somewhat meaningful
+    if (topCorrelation && Math.abs(topCorrelation.correlation) > 0.15) {
+        return topCorrelation;
+    }
+    
+    return null;
 }
 

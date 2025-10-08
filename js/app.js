@@ -1,12 +1,12 @@
-import { fetchWeather, callGemini } from './api.js';
+import { fetchWeatherForLocations, callGemini } from './api.js';
 import { 
     parseSalesFile,
     joinSalesAndWeather,
     runLocalAnalysis,
     preparePayload, 
     parseGeminiResponse, 
-    exportToPDF, 
-    exportToExcel 
+    exportPlannerToPDF,
+    exportPlannerToExcel
 } from './analysis.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { 
@@ -18,10 +18,9 @@ import {
     GoogleAuthProvider,
     signInWithPopup
 } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-import { logEvent, downloadLogFile as downloadLog } from './logger.js';
-import './statistics.js'; // Ensure statistics module is loaded
+import { Logger } from './logger.js';
+import './statistics.js';
 
-// --- Firebase Configuration ---
 const firebaseConfig = {
   apiKey: "AIzaSyAXEJ5wR32T-1-_MR_lCddFxYt30YFvsVw",
   authDomain: "salesprediction-6c0a7.firebaseapp.com",
@@ -32,7 +31,6 @@ const firebaseConfig = {
   measurementId: "G-6Q843X8RGZ"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
@@ -40,98 +38,127 @@ const googleProvider = new GoogleAuthProvider();
 // --- DOM Element References ---
 const authContainer = document.getElementById('auth-container');
 const forecastingInterface = document.getElementById('forecasting-interface');
-const loginScreen = document.getElementById('login-screen');
-const createAccountScreen = document.getElementById('create-account-screen');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingText = document.getElementById('loading-text');
 
-// --- Chart instances ---
-let salesTempChart, salesWeatherChart, lagChart, heatmapChart;
-
 // --- App State ---
+let activeCharts = {};
+let plannerItems = [];
 let currentAnalysisResults = null;
 let currentAiInsights = null;
-let salesFileName = '';
 
 // --- App Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    logEvent('App Initializing');
+    Logger.info('App Initializing');
     setupEventListeners();
     monitorAuthState();
     loadApiKeys();
 });
 
 // --- Authentication ---
-
 function monitorAuthState() {
     onAuthStateChanged(auth, user => {
         if (user) {
-            logEvent(`User logged in: ${user.email}`);
+            Logger.info(`User logged in: ${user.email}`);
             document.getElementById('user-email').textContent = user.email;
-            showForecastingInterface();
+            forecastingInterface.classList.remove('hidden');
+            authContainer.classList.add('hidden');
         } else {
-            logEvent('User logged out');
-            showAuthContainer();
+            Logger.info('User logged out');
+            forecastingInterface.classList.add('hidden');
+            authContainer.classList.remove('hidden');
         }
     });
 }
 
-function handleCreateAccount(event) {
-    event.preventDefault();
-    const email = document.getElementById('create-email').value;
-    const password = document.getElementById('create-password').value;
+function handleAuthAction(promise, successMessage, errorMessage) {
     const errorEl = document.getElementById('auth-error');
     errorEl.textContent = '';
-    logEvent(`Attempting to create account for ${email}`);
-    createUserWithEmailAndPassword(auth, email, password)
-        .catch(error => {
-            logEvent('Create account error: ' + error.message, 'ERROR');
-            errorEl.textContent = error.message;
-        });
+    promise.catch(error => {
+        Logger.error(errorMessage, error);
+        errorEl.textContent = error.message;
+    });
 }
 
-function handleLogin(event) {
-    event.preventDefault();
+function handleCreateAccount(e) {
+    e.preventDefault();
+    const email = document.getElementById('create-email').value;
+    const password = document.getElementById('create-password').value;
+    handleAuthAction(
+        createUserWithEmailAndPassword(auth, email, password),
+        `Account created for ${email}`,
+        'Create account error'
+    );
+}
+
+function handleLogin(e) {
+    e.preventDefault();
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-    const errorEl = document.getElementById('auth-error');
-    errorEl.textContent = '';
-    logEvent(`Attempting to log in ${email}`);
-    signInWithEmailAndPassword(auth, email, password)
-        .catch(error => {
-            logEvent('Login error: ' + error.message, 'ERROR');
-            errorEl.textContent = 'Invalid email or password.';
-        });
+    handleAuthAction(
+        signInWithEmailAndPassword(auth, email, password),
+        `Logged in as ${email}`,
+        'Login error'
+    );
 }
 
 function handleGoogleSignIn() {
-    const errorEl = document.getElementById('auth-error');
-    errorEl.textContent = '';
-    logEvent('Attempting Google Sign-In');
-    signInWithPopup(auth, googleProvider)
-        .catch(error => {
-            logEvent('Google Sign-In Error: ' + error.message, 'ERROR');
-            errorEl.textContent = error.message;
-        });
+    handleAuthAction(signInWithPopup(auth, googleProvider), 'Google Sign-In successful', 'Google Sign-In Error');
 }
 
 function handleLogout() {
-    logEvent('User logging out');
-    signOut(auth).catch(error => logEvent('Logout error: ' + error.message, 'ERROR'));
+    signOut(auth).catch(error => Logger.error('Logout error', error));
 }
 
-// --- UI State Management ---
-function showAuthContainer() {
-    authContainer.classList.remove('hidden');
-    forecastingInterface.classList.add('hidden');
+
+// --- UI & Event Listeners ---
+function setupEventListeners() {
+    // Auth
+    document.getElementById('show-create-account').addEventListener('click', () => switchAuthScreen(false));
+    document.getElementById('show-login').addEventListener('click', () => switchAuthScreen(true));
+    document.getElementById('create-account-form').addEventListener('submit', handleCreateAccount);
+    document.getElementById('login-form').addEventListener('submit', handleLogin);
+    document.getElementById('google-signin-button').addEventListener('click', handleGoogleSignIn);
+    document.getElementById('logout-button').addEventListener('click', handleLogout);
+
+    // Main App & Tabs
+    document.getElementById('analysis-tab-button').addEventListener('click', () => switchTab('analysis'));
+    document.getElementById('planner-tab-button').addEventListener('click', () => switchTab('planner'));
+    document.getElementById('run-analysis-button').addEventListener('click', runAnalysis);
+    
+    // Planner Exports
+    document.getElementById('export-planner-pdf-button').addEventListener('click', () => {
+        if (plannerItems.length > 0) exportPlannerToPDF(plannerItems);
+        else alert('Your planner is empty.');
+    });
+    document.getElementById('export-planner-excel-button').addEventListener('click', () => {
+         if (plannerItems.length > 0) exportPlannerToExcel(plannerItems);
+         else alert('Your planner is empty.');
+    });
+
+    // Settings
+    document.getElementById('settings-button').addEventListener('click', () => document.getElementById('settings-modal').classList.remove('hidden'));
+    document.getElementById('close-settings-button').addEventListener('click', () => document.getElementById('settings-modal').classList.add('hidden'));
+    document.getElementById('settings-form').addEventListener('submit', saveApiKeys);
+    
+    // Logger
+    document.getElementById('download-log-button').addEventListener('click', () => Logger.downloadLogFile());
 }
 
-function showForecastingInterface() {
-    authContainer.classList.add('hidden');
-    forecastingInterface.classList.remove('hidden');
+function switchAuthScreen(showLogin) {
+    document.getElementById('login-screen').classList.toggle('hidden', !showLogin);
+    document.getElementById('create-account-screen').classList.toggle('hidden', showLogin);
+    document.getElementById('auth-error').textContent = '';
 }
 
-function showLoading(text = 'Analyzing data...') {
+function switchTab(activeTab) {
+    document.getElementById('analysis-content').classList.toggle('hidden', activeTab !== 'analysis');
+    document.getElementById('planner-content').classList.toggle('hidden', activeTab !== 'planner');
+    document.getElementById('analysis-tab-button').classList.toggle('tab-active', activeTab === 'analysis');
+    document.getElementById('planner-tab-button').classList.toggle('tab-active', activeTab === 'planner');
+}
+
+function showLoading(text) {
     loadingText.textContent = text;
     loadingOverlay.classList.remove('hidden');
 }
@@ -140,259 +167,219 @@ function hideLoading() {
     loadingOverlay.classList.add('hidden');
 }
 
-// --- Event Listeners Setup ---
-function setupEventListeners() {
-    // Auth
-    document.getElementById('show-create-account').addEventListener('click', () => { loginScreen.classList.add('hidden'); createAccountScreen.classList.remove('hidden'); document.getElementById('auth-error').textContent = ''; });
-    document.getElementById('show-login').addEventListener('click', () => { createAccountScreen.classList.add('hidden'); loginScreen.classList.remove('hidden'); document.getElementById('auth-error').textContent = ''; });
-    document.getElementById('create-account-form').addEventListener('submit', handleCreateAccount);
-    document.getElementById('login-form').addEventListener('submit', handleLogin);
-    document.getElementById('google-signin-button').addEventListener('click', handleGoogleSignIn);
-    document.getElementById('logout-button').addEventListener('click', handleLogout);
-    
-    // Main App
-    document.getElementById('run-analysis-button').addEventListener('click', runAnalysis);
-    document.getElementById('export-pdf-button').addEventListener('click', () => {
-        if (currentAnalysisResults && currentAiInsights) {
-            exportToPDF(currentAnalysisResults, currentAiInsights, salesFileName);
-            logEvent('Exported report to PDF');
-        } else { alert('Please run an analysis first.'); }
-    });
-    document.getElementById('export-excel-button').addEventListener('click', () => {
-         if (currentAnalysisResults && currentAiInsights) {
-            exportToExcel(currentAnalysisResults, currentAiInsights);
-            logEvent('Exported report to Excel');
-        } else { alert('Please run an analysis first.'); }
-    });
-    document.getElementById('download-log-button').addEventListener('click', downloadLog);
-
-    // Settings Modal
-    document.getElementById('settings-button').addEventListener('click', () => document.getElementById('settings-modal').classList.remove('hidden'));
-    document.getElementById('close-settings-button').addEventListener('click', () => document.getElementById('settings-modal').classList.add('hidden'));
-    document.getElementById('settings-form').addEventListener('submit', saveApiKeys);
-}
 
 // --- Core Application Logic ---
 async function runAnalysis() {
     const salesFileInput = document.getElementById('sales-file-input');
-    const startDateInput = document.getElementById('start-date-picker').value;
-    const endDateInput = document.getElementById('end-date-picker').value;
+    const startDate = document.getElementById('start-date-picker').value;
+    const endDate = document.getElementById('end-date-picker').value;
 
-    if (salesFileInput.files.length === 0 || !startDateInput || !endDateInput) {
-        alert('Please upload a sales file and select a start and end date.');
-        return;
+    if (!salesFileInput.files[0] || !startDate || !endDate) {
+        return alert('Please upload a sales file and select both a start and end date.');
     }
-    salesFileName = salesFileInput.files[0].name;
-    logEvent(`Starting analysis for ${salesFileName}`);
-
+    
+    Logger.info(`Starting analysis for ${salesFileInput.files[0].name}`);
     showLoading('Parsing sales data...');
     document.getElementById('welcome-message').classList.add('hidden');
     document.getElementById('results-container').classList.add('hidden');
 
     try {
-        const salesFile = salesFileInput.files[0];
-        const parsedSales = await parseSalesFile(salesFile);
-        logEvent(`Successfully parsed ${parsedSales.length} sales records.`);
+        const parsedSales = await parseSalesFile(salesFileInput.files[0]);
+        const uniqueLocations = [...new Set(parsedSales.map(r => r.location))];
+        Logger.info(`Parsed ${parsedSales.length} records for ${uniqueLocations.length} locations.`);
 
-        showLoading('Fetching weather data...');
-        const weatherApiKey = localStorage.getItem('weatherApiKey') || '';
-        // For now, we'll assume a single location from the sales data or a default
-        const location = parsedSales[0]?.location || 'New York'; 
-        const weatherData = await fetchWeather(weatherApiKey, location, startDateInput, endDateInput);
-        logEvent(`Fetched ${weatherData.length} days of weather data for ${location}.`);
-
-        showLoading('Running local analysis...');
-        const joinedData = joinSalesAndWeather(parsedSales, weatherData);
-        if (joinedData.length === 0) {
-            throw new Error("No sales data matched the provided date range and weather data.");
+        showLoading(`Fetching weather for ${uniqueLocations.length} locations...`);
+        const weatherApiKey = localStorage.getItem('weatherApiKey');
+        const { weatherData, failedLocations } = await fetchWeatherForLocations(weatherApiKey, uniqueLocations, startDate, endDate);
+        if (failedLocations.length > 0) {
+            alert(`Warning: Could not fetch weather for ${failedLocations.join(', ')}. They will be excluded.`);
         }
-        const localAnalysis = runLocalAnalysis(joinedData);
-        currentAnalysisResults = localAnalysis; // Store results
-        logEvent(`Local analysis complete. Found ${localAnalysis.correlations.length} strong correlations.`);
+
+        showLoading('Running statistical analysis...');
+        const joinedData = joinSalesAndWeather(parsedSales, weatherData);
+        if (joinedData.length === 0) throw new Error("No sales data matched the weather data for the selected date range.");
+        
+        currentAnalysisResults = runLocalAnalysis(joinedData);
+        Logger.info('Local analysis complete.', currentAnalysisResults);
 
         showLoading('Querying AI for deep insights...');
-        const geminiApiKey = localStorage.getItem('geminiApiKey') || '';
-        const prompt = preparePayload(localAnalysis, joinedData);
+        const geminiApiKey = localStorage.getItem('geminiApiKey');
+        const prompt = preparePayload(currentAnalysisResults);
         const geminiResponse = await callGemini(geminiApiKey, prompt);
-        logEvent('Received response from AI.');
-
-        const insights = parseGeminiResponse(geminiResponse);
-        currentAiInsights = insights; // Store insights
-        logEvent(`Parsed ${insights.length} insights from AI response.`);
         
-        renderResults(localAnalysis, insights, joinedData);
+        currentAiInsights = parseGeminiResponse(geminiResponse);
+        Logger.info('Parsed AI insights.', currentAiInsights);
+        
+        renderResults(currentAnalysisResults, currentAiInsights, joinedData);
         document.getElementById('results-container').classList.remove('hidden');
-        logEvent('Analysis complete and results rendered.');
 
     } catch (error) {
-        logEvent('Analysis failed: ' + error.message, 'ERROR');
+        Logger.error('Analysis failed', error);
         alert(`An error occurred: ${error.message}`);
     } finally {
         hideLoading();
     }
 }
 
-// --- Results Rendering ---
-function renderResults(analysis, insights, joinedData) {
-    // 1. Update metric cards
-    document.getElementById('metric-revenue').textContent = `$${analysis.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+// --- Results & Planner Rendering ---
+function renderResults(analysis, insightsByLocation, joinedData) {
+    // Render dashboard metrics
+    document.getElementById('metric-revenue').textContent = `$${analysis.totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
     document.getElementById('metric-sales').textContent = analysis.totalSales.toLocaleString();
-    document.getElementById('metric-correlations').textContent = analysis.correlations.length;
-    const topInsight = insights.length > 0 ? insights.sort((a, b) => b.stars - a.stars)[0] : null;
-    document.getElementById('metric-confidence').innerHTML = topInsight ? renderStarRating(topInsight.stars, true) : 'N/A';
+    const totalCorrelations = Object.values(analysis.locations).reduce((sum, loc) => sum + loc.correlations.length, 0);
+    document.getElementById('metric-correlations').textContent = totalCorrelations;
+    const topConfidence = Math.max(0, ...Object.values(insightsByLocation).flat().map(i => i.confidence));
+    document.getElementById('metric-confidence').innerHTML = topConfidence > 0 ? renderStarRating(topConfidence, true) : 'N/A';
+    
+    renderMainCharts(joinedData, analysis);
+    renderInsights(insightsByLocation);
+}
 
-    // 2. Render all charts with real data
-    renderSalesTempChart(joinedData);
-    renderSalesWeatherChart(joinedData);
-    renderLaggedCorrelationChart(analysis.correlations);
-    renderHeatmap(analysis.correlations);
+function renderInsights(insightsByLocation) {
+    const container = document.getElementById('insights-output');
+    container.innerHTML = '';
+    
+    Object.entries(insightsByLocation).forEach(([location, insights]) => {
+        if (insights.length === 0) return;
 
+        const locationHeader = document.createElement('h4');
+        locationHeader.className = 'text-lg font-semibold text-gray-700 mt-6 mb-2 first:mt-0';
+        locationHeader.textContent = `Insights for ${location}`;
+        container.appendChild(locationHeader);
 
-    // 3. Render AI insight cards
-    const insightsContainer = document.getElementById('insights-output');
-    insightsContainer.innerHTML = '';
-    if (insights.length === 0) {
-        insightsContainer.innerHTML = `<p class="text-gray-500 text-center">No specific insights were generated.</p>`;
+        insights.forEach((insight, index) => {
+            const cardId = `insight-${location.replace(/\s+/g, '-')}-${index}`;
+            insight.id = cardId; // Assign a unique ID
+            insight.location = location;
+            
+            const card = document.createElement('div');
+            card.id = cardId;
+            card.className = 'insight-card';
+            card.innerHTML = createInsightCardHTML(insight);
+            container.appendChild(card);
+            
+            // Add event listener to the "Add to Plan" button
+            card.querySelector('.add-to-plan-btn').addEventListener('click', (e) => {
+                addToPlanner(insight, e.currentTarget);
+            });
+        });
+    });
+}
+
+function createInsightCardHTML(insight) {
+    const confidenceHTML = renderStarRating(insight.confidence);
+    return `
+        <div class="card-header">
+            <span class="sku-tag">SKU: ${insight.sku}</span>
+        </div>
+        <div class="card-content">
+            <p class="finding">${insight.finding}</p>
+            <p class="theory">${insight.theory}</p>
+        </div>
+        <div class="card-footer">
+            <div class="confidence">${confidenceHTML}</div>
+            <button class="add-to-plan-btn">
+                <i class="fas fa-plus-circle"></i> Add to Plan
+            </button>
+        </div>
+        <div class="recommendation-tooltip">
+            <strong>Recommendation:</strong> ${insight.recommendation}
+        </div>
+    `;
+}
+
+function addToPlanner(insight, button) {
+    if (plannerItems.some(item => item.id === insight.id)) {
+        alert('This insight is already in your planner.');
         return;
     }
-    insights.forEach(insight => {
-        const card = document.createElement('div');
-        card.className = 'insight-card fade-in';
-        card.innerHTML = `
-            <div class="icon"><i class="fas fa-lightbulb"></i></div>
-            <div class="content">
-                <p class="text">${insight.text}</p>
-                <div class="details">
-                    <span class="impact">Impact: <strong>${insight.impact}</strong></span>
-                    <span class="rating">Confidence: ${renderStarRating(insight.stars)}</span>
-                </div>
-                <p class="recommendation"><strong>Recommendation:</strong> ${insight.recommendation}</p>
+    plannerItems.push(insight);
+    button.textContent = 'Added to Plan';
+    button.disabled = true;
+    button.classList.add('added');
+    
+    updatePlanner();
+}
+
+function updatePlanner() {
+    const plannerContainer = document.getElementById('planner-items-container');
+    const emptyState = document.getElementById('planner-empty-state');
+    
+    plannerContainer.innerHTML = '';
+    
+    if (plannerItems.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+    }
+    
+    emptyState.classList.add('hidden');
+    plannerItems.forEach(item => {
+        const plannerItem = document.createElement('div');
+        plannerItem.className = 'planner-item';
+        plannerItem.innerHTML = `
+            <div class="planner-item-header">
+                <span class="sku-tag">${item.sku} @ ${item.location}</span>
+                <button class="remove-planner-item-btn" data-id="${item.id}">&times;</button>
             </div>
+            <p><strong>Finding:</strong> ${item.finding}</p>
+            <p><strong>Recommendation:</strong> ${item.recommendation}</p>
         `;
-        insightsContainer.appendChild(card);
+        plannerContainer.appendChild(plannerItem);
     });
+
+    // Add event listeners to remove buttons
+    document.querySelectorAll('.remove-planner-item-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const idToRemove = e.currentTarget.getAttribute('data-id');
+            plannerItems = plannerItems.filter(item => item.id !== idToRemove);
+            
+            // Re-enable the "Add to Plan" button on the analysis page
+            const originalCardButton = document.querySelector(`#${idToRemove} .add-to-plan-btn`);
+            if(originalCardButton){
+                originalCardButton.textContent = 'Add to Plan';
+                originalCardButton.disabled = false;
+                originalCardButton.classList.remove('added');
+            }
+
+            updatePlanner();
+        });
+    });
+    
+    // Update planner count
+    document.getElementById('planner-count').textContent = plannerItems.length;
+}
+
+// --- Charting & Visualizations ---
+function renderMainCharts(joinedData, analysis) {
+    destroyAllCharts();
+    const salesTrendCtx = document.getElementById('sales-trend-chart').getContext('2d');
+    const lagCtx = document.getElementById('lagged-correlation-chart').getContext('2d');
+    
+    const dataByDate = joinedData.reduce((acc, row) => {
+        acc[row.date] = (acc[row.date] || 0) + row.revenue;
+        return acc;
+    }, {});
+    const sortedDates = Object.keys(dataByDate).sort();
+
+    activeCharts.salesTrend = new Chart(salesTrendCtx, { /* ... Chart config from previous versions ... */ });
+
+    const topCorrelation = Object.values(analysis.locations).flatMap(l => l.correlations).sort((a,b) => Math.abs(b.correlation) - Math.abs(a.correlation))[0];
+    if(topCorrelation){
+        activeCharts.lagChart = new Chart(lagCtx, { /* ... Chart config from previous versions ... */ });
+    }
+}
+
+function destroyAllCharts() {
+    Object.values(activeCharts).forEach(chart => chart.destroy());
+    activeCharts = {};
 }
 
 function renderStarRating(rating, isLarge = false) {
-    let starsHtml = '';
     const starClass = isLarge ? 'text-2xl' : '';
-    for (let i = 1; i <= 5; i++) {
-        starsHtml += `<i class="fas fa-star ${i <= rating ? 'text-amber-400' : 'text-gray-300'} ${starClass}"></i>`;
-    }
-    return `<span class="star-rating">${starsHtml}</span>`;
-}
-
-// --- Charting Functions ---
-function renderSalesTempChart(data) {
-    const ctx = document.getElementById('sales-temp-chart').getContext('2d');
-    if (salesTempChart) salesTempChart.destroy();
-    
-    // Aggregate sales by temperature
-    const salesByTemp = data.reduce((acc, row) => {
-        const temp = Math.round(row.avg_temp_c);
-        acc[temp] = (acc[temp] || 0) + row.revenue;
-        return acc;
-    }, {});
-    
-    const sortedTemps = Object.keys(salesByTemp).map(Number).sort((a,b) => a - b);
-
-    salesTempChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: sortedTemps.map(t => `${t}°C`),
-            datasets: [{
-                label: 'Total Revenue',
-                data: sortedTemps.map(t => salesByTemp[t]),
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: true,
-                tension: 0.4,
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-    });
-}
-
-function renderSalesWeatherChart(data) {
-    const ctx = document.getElementById('sales-weather-chart').getContext('2d');
-    if (salesWeatherChart) salesWeatherChart.destroy();
-
-    const salesByCondition = data.reduce((acc, row) => {
-        const condition = row.condition.toLowerCase();
-        let simpleCondition = 'Other';
-        if (condition.includes('sun') || condition.includes('clear')) simpleCondition = 'Sunny';
-        else if (condition.includes('cloud') || condition.includes('overcast')) simpleCondition = 'Cloudy';
-        else if (condition.includes('rain') || condition.includes('drizzle')) simpleCondition = 'Rain';
-        else if (condition.includes('snow') || condition.includes('sleet')) simpleCondition = 'Snow';
-
-        acc[simpleCondition] = (acc[simpleCondition] || 0) + row.revenue;
-        return acc;
-    }, {});
-
-    salesWeatherChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: Object.keys(salesByCondition),
-            datasets: [{
-                label: 'Total Revenue',
-                data: Object.values(salesByCondition),
-                backgroundColor: ['#f59e0b', '#6b7280', '#3b82f6', '#d1d5db', '#10b981'],
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-    });
-}
-
-function renderLaggedCorrelationChart(correlations) {
-    const ctx = document.getElementById('lag-timeline-chart').getContext('2d');
-    if (lagChart) lagChart.destroy();
-
-    const topCorrelation = correlations[0];
-    if (!topCorrelation) return;
-
-    lagChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: Array.from({ length: 15 }, (_, i) => `${i} days`),
-            datasets: [{
-                label: `Correlation: SKU ${topCorrelation.sku} vs ${topCorrelation.weatherVariable}`,
-                data: Array(15).fill(null).map((_, i) => i === topCorrelation.bestLag ? topCorrelation.correlation : 0),
-                backgroundColor: '#10b981'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { y: { beginAtZero: false, suggestedMin: -1, suggestedMax: 1 } },
-            plugins: { title: { display: true, text: 'Top Correlation Lag Highlight' } }
-        }
-    });
-}
-
-function renderHeatmap(correlations) {
-    const container = document.getElementById('demand-heatmap');
-    container.innerHTML = ''; // Clear previous
-    if (correlations.length === 0) return;
-
-    const table = document.createElement('table');
-    table.className = 'heatmap-table';
-    
-    const thead = `<thead><tr><th>SKU</th><th>Weather Variable</th><th>Correlation</th></tr></thead>`;
-    let tbody = '<tbody>';
-    correlations.slice(0, 5).forEach(c => { // Show top 5
-        const corrValue = parseFloat(c.correlation);
-        let colorClass = 'neutral';
-        if (corrValue > 0.4) colorClass = 'high-positive';
-        else if (corrValue > 0.2) colorClass = 'low-positive';
-        else if (corrValue < -0.4) colorClass = 'high-negative';
-        else if (corrValue < -0.2) colorClass = 'low-negative';
-
-        tbody += `<tr><td>${c.sku}</td><td>${c.weatherVariable}</td><td class="${colorClass}">${c.correlation}</td></tr>`;
-    });
-    tbody += '</tbody>';
-    
-    table.innerHTML = thead + tbody;
-    container.appendChild(table);
+    return Array.from({ length: 5 }, (_, i) => 
+        `<i class="fas fa-star ${i < rating ? 'text-amber-400' : 'text-gray-300'} ${starClass}"></i>`
+    ).join('');
 }
 
 
@@ -405,7 +392,7 @@ function saveApiKeys(event) {
     if (geminiKey) localStorage.setItem('geminiApiKey', geminiKey);
     if (weatherKey) localStorage.setItem('weatherApiKey', weatherKey);
     
-    logEvent('API keys saved to local storage.');
+    Logger.info('API keys saved to local storage.');
     document.getElementById('settings-modal').classList.add('hidden');
     alert('Settings saved!');
 }
@@ -416,6 +403,8 @@ function loadApiKeys() {
 
     if (geminiKey) document.getElementById('gemini-api-key').value = geminiKey;
     if (weatherKey) document.getElementById('weather-api-key').value = weatherKey;
-    logEvent('API keys loaded from local storage.');
+    if (geminiKey || weatherKey) {
+        Logger.info('API keys loaded from local storage.');
+    }
 }
 

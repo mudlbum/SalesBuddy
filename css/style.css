@@ -9,43 +9,181 @@ html, body {
 
 body {
     font-family: 'Inter', sans-serif;
-    background-color: #f3f4f6; /* Gray 100 */
+    background-color: #f9fafb; /* Lighter Gray */
 }
 
-/* --- Animations --- */
-.fade-in {
-    animation: fadeIn 0.5s ease-in-out forwards;
+/* Tab Navigation */
+.tab-button {
+    padding: 1rem 0.25rem;
+    border-bottom: 3px solid transparent;
+    font-weight: 600;
+    color: #6b7280; /* Gray 500 */
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+}
+.tab-button:hover {
+    color: #374151; /* Gray 700 */
+}
+.tab-button.active {
+    color: #2563eb; /* Blue 600 */
+    border-bottom-color: #2563eb;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* --- Loading Spinner Animation --- */
-.loading-spinner {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    border: 6px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #ffffff;
-    animation: spin 1s linear infinite;
-    margin: 0 auto;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* --- Insight Card Placeholder Animation --- */
-.insight-card-placeholder {
-    background-color: #e5e7eb; /* Gray 200 */
-    border-radius: 0.75rem;
-    height: 100px;
-    position: relative;
+/* Infographic Insight Card */
+.insight-card {
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem; /* Larger radius */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem;
     overflow: hidden;
 }
-.insight-card-placeholder::after {
+
+.insight-card .infographic {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 150px;
+    padding: 1rem;
+    border-right: 1px solid #f3f4f6;
+    text-align: center;
+}
+
+.insight-card .weather-icon i {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+.icon-sunny { color: #f59e0b; }
+.icon-rain { color: #3b82f6; }
+.icon-snow { color: #a5f3fc; }
+.icon-cloudy { color: #9ca3af; }
+.icon-wind { color: #6ee7b7; }
+.icon-default { color: #6b7280; }
+
+
+.insight-card .impact-score {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.insight-card .impact-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+}
+
+.insight-card .content {
+    display: flex;
+    flex-direction: column;
+}
+
+.insight-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.insight-card .card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+.insight-card .card-title .location {
+    font-weight: 400;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+.insight-card .add-to-plan-button {
+    background-color: #f3f4f6;
+    color: #4b5563;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.insight-card .add-to-plan-button:hover {
+    background-color: #e5e7eb;
+}
+.insight-card .add-to-plan-button.added {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+}
+
+.insight-card .finding {
+    margin-top: 0.5rem;
+    color: #4b5563;
+    font-size: 0.95rem;
+}
+
+.insight-card .details {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f3f4f6;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+.insight-card .detail-item {
+    text-align: center;
+}
+.insight-card .detail-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+}
+.insight-card .detail-value {
+    font-weight: 600;
+    color: #1f2937;
+    margin-top: 0.25rem;
+}
+
+
+/* Planner Item Styles */
+.planner-item {
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    border-left: 4px solid #3b82f6; /* Blue accent */
+    border-radius: 0.5rem;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+.planner-item:hover {
+    background-color: #f9fafb;
+}
+
+.planner-item .remove-button {
+    color: #ef4444; /* Red 500 */
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.planner-item .remove-button:hover {
+    opacity: 1;
+}
+
+/* Animations and Placeholders */
+.shimmer-bg {
+    position: relative;
+    overflow: hidden;
+    background-color: #e5e7eb;
+}
+.shimmer-bg::after {
     content: '';
     position: absolute;
     top: 0;
@@ -53,113 +191,19 @@ body {
     right: 0;
     bottom: 0;
     transform: translateX(-100%);
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    animation: shimmer 1.5s infinite;
+    background-image: linear-gradient(90deg, rgba(255,255,255,0) 0, rgba(255,255,255,0.2) 20%, rgba(255,255,255,0.5) 60%, rgba(255,255,255,0));
+    animation: shimmer 2s infinite;
 }
 
-@keyframes shimmer {
-    100% {
-        transform: translateX(100%);
-    }
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out forwards;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-
-/* --- Component Styles --- */
-
-/* Insight Card */
-.insight-card {
-    background-color: white;
-    border: 1px solid #e5e7eb; /* Gray 200 */
-    border-radius: 0.75rem; /* Slightly larger radius */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    padding: 1.5rem;
-    display: flex;
-    align-items: flex-start;
-    gap: 1.25rem;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+button:disabled {
+    cursor: not-allowed;
 }
-.insight-card:hover {
-     transform: translateY(-3px);
-     box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-}
-.insight-card .icon {
-    flex-shrink: 0;
-    width: 3rem;
-    height: 3rem;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #eff6ff; /* Blue 50 */
-    color: #2563eb; /* Blue 600 */
-    font-size: 1.25rem;
-}
-.insight-card .content {
-    flex-grow: 1;
-}
-.insight-card .text {
-    color: #374151; /* Gray 700 */
-    line-height: 1.6;
-}
-.insight-card .details {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    margin-top: 0.75rem;
-    font-size: 0.875rem;
-    color: #4b5563; /* Gray 600 */
-}
-.insight-card .recommendation {
-    margin-top: 0.75rem;
-    font-size: 0.875rem;
-    color: #1f2937; /* Gray 800 */
-    background-color: #f9fafb; /* Gray 50 */
-    border-left: 3px solid #3b82f6; /* Blue 500 */
-    padding: 0.75rem;
-    border-radius: 0.25rem;
-}
-
-/* Star Rating */
-.star-rating i {
-    transition: color 0.2s ease;
-}
-
-/* Heatmap Table */
-.heatmap-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
-    overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-.heatmap-table th,
-.heatmap-table td {
-    padding: 0.75rem 1rem;
-    text-align: center;
-    border-bottom: 1px solid #e5e7eb;
-}
-.heatmap-table th {
-    background-color: #f9fafb; /* Gray 50 */
-    font-weight: 600;
-    color: #374151; /* Gray 700 */
-}
-.heatmap-table tr:last-child td {
-    border-bottom: none;
-}
-.heatmap-table td {
-    color: #1f2937;
-    transition: background-color 0.2s;
-}
-.heatmap-table tr:hover td {
-    background-color: #eff6ff;
-}
-
-/* Color classes for correlation values */
-.heatmap-table .high-positive { background-color: #16a34a; color: white; } /* Green 600 */
-.heatmap-table .low-positive  { background-color: #86efac; color: #14532d; } /* Green 300 */
-.heatmap-table .neutral       { background-color: #f9fafb; color: #4b5563; } /* Gray 50 */
-.heatmap-table .low-negative  { background-color: #fca5a5; color: #7f1d1d; } /* Red 300 */
-.heatmap-table .high-negative { background-color: #dc2626; color: white; } /* Red 600 */
 

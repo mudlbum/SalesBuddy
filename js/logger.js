@@ -1,98 +1,93 @@
 /**
- * A singleton logger class for consistent logging throughout the application.
- * This ensures that all parts of the app write to the same log instance.
+ * A static class to provide a structured logging system for the application.
+ * Logs are stored in memory and can be downloaded as a text file.
  */
-class AppLogger {
-    constructor() {
-        if (AppLogger.instance) {
-            return AppLogger.instance;
-        }
-        this.logEntries = [];
-        AppLogger.instance = this;
+export class Logger {
+    // Private static property to hold the log entries.
+    static #logEntries = [];
+
+    /**
+     * Adds an informational log entry.
+     * @param {string} message - The main log message.
+     * @param {any} [details] - Optional details object to be stringified.
+     */
+    static info(message, details) {
+        this.#addEntry(message, 'INFO', details);
     }
 
     /**
-     * Adds a formatted log entry to the internal log array and outputs to the console.
-     * @param {string} level - The severity level of the log (e.g., INFO, WARN, ERROR).
-     * @param {string} message - The primary log message.
-     * @param {*} [data] - Optional data to include in the console output.
+     * Adds a warning log entry.
+     * @param {string} message - The main log message.
+     * @param {any} [details] - Optional details object to be stringified.
      */
-    _log(level, message, data) {
+    static warn(message, details) {
+        this.#addEntry(message, 'WARN', details);
+    }
+
+    /**
+     * Adds an error log entry.
+     * @param {string} message - The main log message.
+     * @param {any} [error] - The error object or details.
+     */
+    static error(message, error) {
+        this.#addEntry(message, 'ERROR', error);
+    }
+
+    /**
+     * Private helper method to format and add a log entry.
+     * @param {string} message - The message.
+     * @param {string} level - The log level (INFO, WARN, ERROR).
+     * @param {any} [details] - Optional details.
+     */
+    static #addEntry(message, level, details) {
         const timestamp = new Date().toISOString();
-        const logEntry = `${timestamp} [${level}]: ${message}`;
-        this.logEntries.push(logEntry);
+        let logString = `${timestamp} [${level}]: ${message}`;
 
-        switch (level) {
-            case 'ERROR':
-                console.error(logEntry, data || '');
-                break;
-            case 'WARN':
-                console.warn(logEntry, data || '');
-                break;
-            default:
-                console.log(logEntry, data || '');
+        if (details) {
+            if (details instanceof Error) {
+                logString += ` | Details: ${details.message}`;
+                if (details.stack) {
+                     logString += `\n${details.stack}`;
+                }
+            } else {
+                try {
+                    logString += ` | Details: ${JSON.stringify(details, null, 2)}`;
+                } catch {
+                    logString += ` | Details: [Unserializable object]`;
+                }
+            }
         }
+
+        this.#logEntries.push(logString);
+        
+        // Output to console for live debugging
+        const consoleMethod = level.toLowerCase() === 'info' ? 'log' : level.toLowerCase();
+        console[consoleMethod](`${timestamp} [${level}]: ${message}`, details || '');
     }
 
     /**
-     * Logs an informational message.
-     * @param {string} message - The message to log.
-     * @param {*} [data] - Optional data to accompany the message.
+     * Triggers a browser download for the collected log data.
      */
-    info(message, data) {
-        this._log('INFO', message, data);
-    }
-
-    /**
-     * Logs a warning message.
-     * @param {string} message - The message to log.
-     * @param {*} [data] - Optional data to accompany the message.
-     */
-    warn(message, data) {
-        this._log('WARN', message, data);
-    }
-
-    /**
-     * Logs an error message.
-     * @param {string} message - The message to log.
-     * @param {*} [data] - Optional error object or additional data.
-     */
-    error(message, data) {
-        this._log('ERROR', message, data);
-    }
-
-    /**
-     * Creates and triggers a download for the collected log data as a .txt file.
-     */
-    downloadLogFile() {
-        if (this.logEntries.length === 0) {
-            alert('The log is empty. No file to download.');
+    static downloadLogFile() {
+        if (this.#logEntries.length === 0) {
+            alert('There are no log entries to download.');
             return;
         }
 
-        try {
-            const logData = this.logEntries.join('\n');
-            const blob = new Blob([logData], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            
-            const dateStamp = new Date().toISOString().split('T')[0];
-            link.href = url;
-            link.download = `ai-sales-forecast-log-${dateStamp}.txt`;
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            URL.revokeObjectURL(url); // Clean up the object URL
-            this.info('Log file downloaded successfully.');
-        } catch (e) {
-            this.error('Failed to download log file.', e);
-            alert('An error occurred while trying to download the log file.');
-        }
+        const logData = this.#logEntries.join('\n\n');
+        const blob = new Blob([logData], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        
+        const dateStamp = new Date().toISOString().split('T')[0];
+        link.href = url;
+        link.download = `ai-sales-forecast-log-${dateStamp}.txt`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        this.info('Log file downloaded.');
     }
 }
-
-// Export a single instance of the logger for the entire application to use.
-export const Logger = new AppLogger();
 
