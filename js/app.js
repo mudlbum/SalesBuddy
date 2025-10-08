@@ -1,16 +1,16 @@
-// --- Imports ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { fetchWeather, callGemini } from './api.js';
+import { preparePayload, parseGeminiResponse, exportToPDF, exportToExcel } from './analysis.js';
+import { logEvent, downloadLogFile } from './logger.js';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { 
     getAuth, 
     createUserWithEmailAndPassword, 
-    signInWithEmailAndPassword,
-    signInWithPopup,
+    signInWithEmailAndPassword, 
+    onAuthStateChanged,
+    signOut,
     GoogleAuthProvider,
-    onAuthStateChanged, 
-    signOut 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { callGemini, fetchWeather } from './api.js';
-import { preparePayload, parseGeminiResponse, exportToPDF, exportToExcel } from './analysis.js';
+    signInWithPopup
+} from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 
 // --- Firebase Configuration ---
 const firebaseConfig = {
@@ -23,192 +23,100 @@ const firebaseConfig = {
   measurementId: "G-6Q843X8RGZ"
 };
 
-
-// --- App Initialization ---
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
+const provider = new GoogleAuthProvider();
 
-// --- DOM Elements ---
+// --- DOM Element References ---
 const authContainer = document.getElementById('auth-container');
 const forecastingInterface = document.getElementById('forecasting-interface');
 const loginScreen = document.getElementById('login-screen');
 const createAccountScreen = document.getElementById('create-account-screen');
-const authError = document.getElementById('auth-error');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingText = document.getElementById('loading-text');
 
-// --- Global State ---
-let salesFile = null;
-let analysisResults = null;
-let salesTempChart = null;
-let salesWeatherChart = null;
+// --- Chart instances ---
+let salesTempChart, salesWeatherChart;
 
-// --- Authentication Logic ---
-
-// Listen for authentication state changes
-onAuthStateChanged(auth, user => {
-    if (user) {
-        // User is signed in
-        authContainer.classList.add('hidden');
-        forecastingInterface.classList.remove('hidden');
-        document.getElementById('user-email').textContent = user.email;
-        loadApiKeys();
-    } else {
-        // User is signed out
-        authContainer.classList.remove('hidden');
-        forecastingInterface.classList.add('hidden');
-    }
+// --- App Initialization ---
+document.addEventListener('DOMContentLoaded', () => {
+    logEvent('Application initializing.');
+    setupEventListeners();
+    monitorAuthState();
+    loadApiKeys();
 });
 
-// Event Listeners for Auth Forms
-document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    authError.textContent = '';
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    try {
-        await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-        authError.textContent = "Invalid email or password.";
-    }
-});
+// --- Authentication ---
 
-document.getElementById('create-account-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    authError.textContent = '';
-    const email = document.getElementById('create-email').value;
-    const password = document.getElementById('create-password').value;
-    try {
-        await createUserWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-        authError.textContent = error.message;
-    }
-});
-
-document.getElementById('google-signin-button').addEventListener('click', async () => {
-    authError.textContent = '';
-    try {
-        await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-        authError.textContent = `Google Sign-In Error: ${error.message}`;
-    }
-});
-
-
-document.getElementById('logout-button').addEventListener('click', () => {
-    signOut(auth);
-});
-
-// Screen switching
-document.getElementById('show-create-account').addEventListener('click', () => {
-    loginScreen.classList.add('hidden');
-    createAccountScreen.classList.remove('hidden');
-    authError.textContent = '';
-});
-
-document.getElementById('show-login').addEventListener('click', () => {
-    createAccountScreen.classList.add('hidden');
-    loginScreen.classList.remove('hidden');
-    authError.textContent = '';
-});
-
-
-// --- Main Application Logic ---
-
-// Settings Modal Logic
-const settingsModal = document.getElementById('settings-modal');
-document.getElementById('settings-button').addEventListener('click', () => settingsModal.classList.remove('hidden'));
-document.getElementById('close-settings-button').addEventListener('click', () => settingsModal.classList.add('hidden'));
-document.getElementById('settings-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const geminiKey = document.getElementById('gemini-api-key').value;
-    const weatherKey = document.getElementById('weather-api-key').value;
-    localStorage.setItem('geminiApiKey', geminiKey);
-    localStorage.setItem('weatherApiKey', weatherKey);
-    settingsModal.classList.add('hidden');
-    alert('API keys saved!');
-});
-
-function loadApiKeys() {
-    const geminiKey = localStorage.getItem('geminiApiKey');
-    const weatherKey = localStorage.getItem('weatherApiKey');
-    if (geminiKey) document.getElementById('gemini-api-key').value = geminiKey;
-    if (weatherKey) document.getElementById('weather-api-key').value = weatherKey;
+function monitorAuthState() {
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            logEvent(`User logged in: ${user.email}`);
+            document.getElementById('user-email').textContent = user.email;
+            showForecastingInterface();
+        } else {
+            logEvent('User logged out.');
+            showAuthContainer();
+        }
+    });
 }
 
-// File Input Logic
-document.getElementById('sales-file-input').addEventListener('change', (event) => {
-    salesFile = event.target.files[0];
-    if (salesFile) {
-        console.log(`File selected: ${salesFile.name}`);
-    }
-});
+function handleCreateAccount(event) {
+    event.preventDefault();
+    const email = document.getElementById('create-email').value;
+    const password = document.getElementById('create-password').value;
+    const errorEl = document.getElementById('auth-error');
+    logEvent(`Attempting to create account for: ${email}`);
+    createUserWithEmailAndPassword(auth, email, password)
+        .catch(error => {
+            logEvent(`Create account error: ${error.message}`, 'ERROR');
+            errorEl.textContent = error.message;
+        });
+}
 
-// Run Analysis Logic
-document.getElementById('run-analysis-button').addEventListener('click', async () => {
-    if (!salesFile) {
-        alert('Please upload a sales data file first.');
-        return;
-    }
-    
-    const geminiApiKey = localStorage.getItem('geminiApiKey');
-    const weatherApiKey = localStorage.getItem('weatherApiKey');
+function handleLogin(event) {
+    event.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const errorEl = document.getElementById('auth-error');
+    logEvent(`Login attempt for: ${email}`);
+    signInWithEmailAndPassword(auth, email, password)
+        .catch(error => {
+            logEvent(`Login error: ${error.message}`, 'ERROR');
+            errorEl.textContent = 'Invalid email or password.';
+        });
+}
 
-    if (!geminiApiKey || !weatherApiKey) {
-        alert('Please set your API keys in the settings.');
-        return;
-    }
-    
-    document.getElementById('welcome-message').classList.add('hidden');
-    showLoading('Fetching weather data...');
-    try {
-        // 1. Fetch weather data (using a mock for now)
-        const weatherData = await fetchWeather(weatherApiKey, 'New York', '2023-01-01', '2023-01-31');
-        
-        // 2. Prepare payload for Gemini
-        showLoading('Analyzing data with AI...');
-        const payload = preparePayload({ fileName: salesFile.name }, weatherData);
+function handleGoogleSignIn() {
+    logEvent('Attempting Google Sign-In.');
+    signInWithPopup(auth, provider)
+        .catch((error) => {
+            logEvent(`Google Sign-In error: ${error.message}`, 'ERROR');
+            document.getElementById('auth-error').textContent = 'Could not sign in with Google.';
+        });
+}
 
-        // 3. Call Gemini API
-        const geminiRawResponse = await callGemini(geminiApiKey, payload);
-
-        // 4. Parse response and store results
-        analysisResults = parseGeminiResponse(geminiRawResponse);
-        
-        // 5. Render results to the UI
-        renderResults(analysisResults);
-
-    } catch (error) {
-        console.error('Analysis failed:', error);
-        alert(`An error occurred during analysis: ${error.message}`);
-    } finally {
-        hideLoading();
-    }
-});
-
-// Export Logic
-document.getElementById('export-pdf-button').addEventListener('click', () => {
-    if (!analysisResults) {
-        alert('Please run an analysis first.');
-        return;
-    }
-    exportToPDF(analysisResults);
-});
-
-document.getElementById('export-excel-button').addEventListener('click', () => {
-    if (!analysisResults) {
-        alert('Please run an analysis first.');
-        return;
-    }
-    exportToExcel(analysisResults);
-});
+function handleLogout() {
+    logEvent('User initiated logout.');
+    signOut(auth).catch(error => logEvent(`Logout error: ${error.message}`, 'ERROR'));
+}
 
 
-// --- UI Rendering ---
+// --- UI State Management ---
 
-function showLoading(message) {
-    loadingText.textContent = message;
+function showAuthContainer() {
+    authContainer.classList.remove('hidden');
+    forecastingInterface.classList.add('hidden');
+}
+
+function showForecastingInterface() {
+    authContainer.classList.add('hidden');
+    forecastingInterface.classList.remove('hidden');
+}
+
+function showLoading(text = 'Analyzing data...') {
+    loadingText.textContent = text;
     loadingOverlay.classList.remove('hidden');
 }
 
@@ -216,93 +124,200 @@ function hideLoading() {
     loadingOverlay.classList.add('hidden');
 }
 
-function renderResults(results) {
-    document.getElementById('results-container').classList.remove('hidden');
+
+// --- Event Listeners Setup ---
+
+function setupEventListeners() {
+    // Auth screen toggling
+    document.getElementById('show-create-account').addEventListener('click', () => {
+        loginScreen.classList.add('hidden');
+        createAccountScreen.classList.remove('hidden');
+        document.getElementById('auth-error').textContent = '';
+    });
+    document.getElementById('show-login').addEventListener('click', () => {
+        createAccountScreen.classList.add('hidden');
+        loginScreen.classList.remove('hidden');
+        document.getElementById('auth-error').textContent = '';
+    });
+
+    // Auth forms
+    document.getElementById('create-account-form').addEventListener('submit', handleCreateAccount);
+    document.getElementById('login-form').addEventListener('submit', handleLogin);
+    document.getElementById('google-signin-button').addEventListener('click', handleGoogleSignIn);
+    document.getElementById('logout-button').addEventListener('click', handleLogout);
     
-    // Render metric cards (mock data)
-    document.getElementById('metric-revenue').textContent = '$1.25M';
-    document.getElementById('metric-sales').textContent = '8,450';
-    document.getElementById('metric-correlations').textContent = results.length;
-    
-    const topInsight = results.sort((a,b) => b.stars - a.stars)[0];
-    if(topInsight){
-         document.getElementById('metric-confidence').innerHTML = renderStarRating(topInsight.stars);
-    } else {
-         document.getElementById('metric-confidence').textContent = '-';
+    // Main app buttons
+    document.getElementById('run-analysis-button').addEventListener('click', runAnalysis);
+    document.getElementById('export-pdf-button').addEventListener('click', () => exportToPDF({}));
+    document.getElementById('export-excel-button').addEventListener('click', () => exportToExcel({}));
+    document.getElementById('download-log-button').addEventListener('click', downloadLogFile);
+
+    // Settings Modal
+    document.getElementById('settings-button').addEventListener('click', () => document.getElementById('settings-modal').classList.remove('hidden'));
+    document.getElementById('close-settings-button').addEventListener('click', () => document.getElementById('settings-modal').classList.add('hidden'));
+    document.getElementById('settings-form').addEventListener('submit', saveApiKeys);
+}
+
+
+// --- Core Application Logic ---
+
+async function runAnalysis() {
+    const salesFileInput = document.getElementById('sales-file-input');
+    if (salesFileInput.files.length === 0) {
+        alert('Please upload a sales data file.');
+        logEvent('Analysis run aborted: No file selected.', 'WARN');
+        return;
     }
 
-    // Render insight cards
+    logEvent('Starting analysis run.');
+    showLoading('Fetching weather data...');
+    document.getElementById('welcome-message').classList.add('hidden');
+    document.getElementById('results-container').classList.add('hidden');
+
+    try {
+        const salesData = { fileName: salesFileInput.files[0].name };
+        logEvent(`Sales data file: ${salesData.fileName}`);
+        
+        // Step 1: Fetch weather data
+        const weatherApiKey = localStorage.getItem('weatherApiKey') || '';
+        const weatherData = await fetchWeather(weatherApiKey, 'New York', '2023-01-01', '2023-01-31');
+
+        // Step 2: Prepare payload for Gemini
+        showLoading('Analyzing with AI...');
+        const geminiPayload = preparePayload(salesData, weatherData);
+
+        // Step 3: Call Gemini API
+        const geminiApiKey = localStorage.getItem('geminiApiKey') || '';
+        const geminiResponse = await callGemini(geminiApiKey, geminiPayload);
+
+        // Step 4: Parse the response
+        const insights = parseGeminiResponse(geminiResponse);
+        
+        // Step 5: Render results
+        logEvent('Analysis complete. Rendering results.');
+        renderResults(insights);
+        document.getElementById('results-container').classList.remove('hidden', 'fade-in');
+        void document.getElementById('results-container').offsetWidth; // Trigger reflow
+        document.getElementById('results-container').classList.add('fade-in');
+
+
+    } catch (error) {
+        logEvent(`Analysis failed: ${error.message}`, 'ERROR');
+        alert(`An error occurred during analysis: ${error.message}`);
+    } finally {
+        hideLoading();
+    }
+}
+
+
+// --- Results Rendering ---
+
+function renderResults(insights) {
+    // 1. Update metric cards (mock data for now)
+    document.getElementById('metric-revenue').textContent = '$1,250,300';
+    document.getElementById('metric-sales').textContent = '8,450';
+    document.getElementById('metric-correlations').textContent = insights.length;
+    const topInsight = insights.sort((a, b) => b.stars - a.stars)[0];
+    document.getElementById('metric-confidence').innerHTML = topInsight ? renderStarRating(topInsight.stars, true) : 'N/A';
+
+    // 2. Render charts (mock data for now)
+    renderSalesTempChart();
+    renderSalesWeatherChart();
+
+    // 3. Render AI insight cards
     const insightsContainer = document.getElementById('insights-output');
     insightsContainer.innerHTML = ''; // Clear previous results
-    results.forEach(insight => {
+    if (insights.length === 0) {
+        insightsContainer.innerHTML = `<p class="text-gray-500 text-center">No specific insights were generated.</p>`;
+        return;
+    }
+    insights.forEach(insight => {
         const card = document.createElement('div');
-        card.className = 'bg-white p-4 rounded-lg shadow-sm border border-gray-200';
-        
+        card.className = 'insight-card fade-in';
         card.innerHTML = `
-            <p class="text-gray-700">${insight.text}</p>
-            <div class="mt-2 text-yellow-500">${renderStarRating(insight.stars)}</div>
+            <div class="icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="content">
+                <p class="text">${insight.text}</p>
+                <div class="rating">
+                    <strong>Confidence:</strong> ${renderStarRating(insight.stars)}
+                </div>
+            </div>
         `;
         insightsContainer.appendChild(card);
     });
-
-    // Render charts (mock data)
-    renderCharts();
 }
 
-function renderStarRating(rating) {
-    let stars = '';
-    for(let i = 0; i < 5; i++) {
-        stars += i < rating ? '★' : '☆';
+function renderStarRating(rating, isLarge = false) {
+    let starsHtml = '';
+    const starClass = isLarge ? 'text-2xl' : '';
+    for (let i = 1; i <= 5; i++) {
+        starsHtml += `<i class="fas fa-star ${i <= rating ? 'text-amber-400' : 'text-gray-300'} ${starClass}"></i>`;
     }
-    return `<span>${stars}</span>`;
+    return `<span class="star-rating">${starsHtml}</span>`;
 }
 
 
-function renderCharts() {
-    // Destroy existing charts if they exist to prevent duplicates
-    if (salesTempChart) salesTempChart.destroy();
-    if (salesWeatherChart) salesWeatherChart.destroy();
+// --- Charting Functions ---
 
-    // Chart 1: Sales vs. Temperature
-    const tempCtx = document.getElementById('sales-temp-chart').getContext('2d');
-    salesTempChart = new Chart(tempCtx, {
+function renderSalesTempChart() {
+    const ctx = document.getElementById('sales-temp-chart').getContext('2d');
+    if (salesTempChart) salesTempChart.destroy();
+    salesTempChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: ['-5°C', '0°C', '5°C', '10°C', '15°C', '20°C'],
+            labels: ['-5°C', '0°C', '5°C', '10°C', '15°C', '20°C', '25°C'],
             datasets: [{
-                label: 'Sales Volume',
-                data: [200, 350, 450, 800, 1200, 1500],
-                borderColor: 'rgb(79, 70, 229)',
-                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                label: 'Sales Revenue',
+                data: [12000, 19000, 25000, 55000, 82000, 115000, 130000],
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: true,
-                tension: 0.1
+                tension: 0.4,
             }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
+        options: { responsive: true, maintainAspectRatio: false }
     });
+}
 
-    // Chart 2: Sales by Weather Condition
-    const weatherCtx = document.getElementById('sales-weather-chart').getContext('2d');
-    salesWeatherChart = new Chart(weatherCtx, {
+function renderSalesWeatherChart() {
+    const ctx = document.getElementById('sales-weather-chart').getContext('2d');
+    if (salesWeatherChart) salesWeatherChart.destroy();
+    salesWeatherChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: ['Sunny', 'Cloudy', 'Rain', 'Snow'],
             datasets: [{
-                label: 'Total Sales',
-                data: [5200, 3100, 2500, 4100],
-                backgroundColor: ['#60a5fa', '#9ca3af', '#3b82f6', '#e5e7eb'],
+                label: 'Average Daily Sales',
+                data: [15000, 11000, 8500, 4000],
+                backgroundColor: ['#f59e0b', '#6b7280', '#3b82f6', '#d1d5db'],
             }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            }
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
+}
+
+
+// --- Settings & API Keys ---
+
+function saveApiKeys(event) {
+    event.preventDefault();
+    const geminiKey = document.getElementById('gemini-api-key').value;
+    const weatherKey = document.getElementById('weather-api-key').value;
+
+    if (geminiKey) localStorage.setItem('geminiApiKey', geminiKey);
+    if (weatherKey) localStorage.setItem('weatherApiKey', weatherKey);
+
+    logEvent('API keys saved to local storage.');
+    document.getElementById('settings-modal').classList.add('hidden');
+    alert('Settings saved!');
+}
+
+function loadApiKeys() {
+    const geminiKey = localStorage.getItem('geminiApiKey');
+    const weatherKey = localStorage.getItem('weatherApiKey');
+
+    if (geminiKey) document.getElementById('gemini-api-key').value = geminiKey;
+    if (weatherKey) document.getElementById('weather-api-key').value = weatherKey;
+    logEvent('API keys loaded from local storage.');
 }
 
