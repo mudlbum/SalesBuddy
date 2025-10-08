@@ -1,0 +1,86 @@
+/* Custom Styles for AI Sales Forecasting Agent */
+
+/* Ensure the full height of the viewport is used */
+html, body {
+    height: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Star rating styles for insight cards */
+.star-rating {
+    color: #f59e0b; /* Amber 500 */
+}
+
+.star-rating .fa-star-o {
+    color: #d1d5db; /* Gray 300 */
+}
+
+/* Custom file input styling */
+input[type="file"] {
+    cursor: pointer;
+}
+
+/* Styling for disabled buttons to make them look clearly inactive */
+button:disabled {
+    background-color: #9ca3af; /* Gray 400 */
+    cursor: not-allowed;
+}
+
+/* Fade-in animation for showing elements */
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Insight card for a clean, modern look */
+.insight-card {
+    background-color: white;
+    border: 1px solid #e5e7eb; /* Gray 200 */
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.insight-card:hover {
+     box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.08);
+}
+
+.insight-card .icon {
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #eff6ff; /* Blue 50 */
+    color: #2563eb; /* Blue 600 */
+}
+
+.insight-card .content {
+    flex-grow: 1;
+}
+
+.insight-card .text {
+    color: #374151; /* Gray 700 */
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.insight-card .rating {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+}
+
