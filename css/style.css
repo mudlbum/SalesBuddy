@@ -1,86 +1,165 @@
 /* Custom Styles for AI Sales Forecasting Agent */
 
-/* Ensure the full height of the viewport is used */
+/* Base Styles */
 html, body {
     height: 100%;
     overflow-x: hidden;
+    scroll-behavior: smooth;
 }
 
 body {
     font-family: 'Inter', sans-serif;
+    background-color: #f3f4f6; /* Gray 100 */
 }
 
-/* Star rating styles for insight cards */
-.star-rating {
-    color: #f59e0b; /* Amber 500 */
-}
-
-.star-rating .fa-star-o {
-    color: #d1d5db; /* Gray 300 */
-}
-
-/* Custom file input styling */
-input[type="file"] {
-    cursor: pointer;
-}
-
-/* Styling for disabled buttons to make them look clearly inactive */
-button:disabled {
-    background-color: #9ca3af; /* Gray 400 */
-    cursor: not-allowed;
-}
-
-/* Fade-in animation for showing elements */
+/* --- Animations --- */
 .fade-in {
-    animation: fadeIn 0.5s ease-in-out;
+    animation: fadeIn 0.5s ease-in-out forwards;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
+    from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Insight card for a clean, modern look */
+/* --- Loading Spinner Animation --- */
+.loading-spinner {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 6px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --- Insight Card Placeholder Animation --- */
+.insight-card-placeholder {
+    background-color: #e5e7eb; /* Gray 200 */
+    border-radius: 0.75rem;
+    height: 100px;
+    position: relative;
+    overflow: hidden;
+}
+.insight-card-placeholder::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+
+/* --- Component Styles --- */
+
+/* Insight Card */
 .insight-card {
     background-color: white;
     border: 1px solid #e5e7eb; /* Gray 200 */
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    border-radius: 0.75rem; /* Slightly larger radius */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     padding: 1.5rem;
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
-    transition: box-shadow 0.2s ease-in-out;
+    gap: 1.25rem;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
-
 .insight-card:hover {
-     box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.08);
+     transform: translateY(-3px);
+     box-shadow: 0 5px 15px rgba(0,0,0,0.08);
 }
-
 .insight-card .icon {
     flex-shrink: 0;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 3rem;
+    height: 3rem;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: #eff6ff; /* Blue 50 */
     color: #2563eb; /* Blue 600 */
+    font-size: 1.25rem;
 }
-
 .insight-card .content {
     flex-grow: 1;
 }
-
 .insight-card .text {
     color: #374151; /* Gray 700 */
-    font-size: 0.95rem;
     line-height: 1.6;
 }
-
-.insight-card .rating {
+.insight-card .details {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
     margin-top: 0.75rem;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    color: #4b5563; /* Gray 600 */
 }
+.insight-card .recommendation {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: #1f2937; /* Gray 800 */
+    background-color: #f9fafb; /* Gray 50 */
+    border-left: 3px solid #3b82f6; /* Blue 500 */
+    padding: 0.75rem;
+    border-radius: 0.25rem;
+}
+
+/* Star Rating */
+.star-rating i {
+    transition: color 0.2s ease;
+}
+
+/* Heatmap Table */
+.heatmap-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.heatmap-table th,
+.heatmap-table td {
+    padding: 0.75rem 1rem;
+    text-align: center;
+    border-bottom: 1px solid #e5e7eb;
+}
+.heatmap-table th {
+    background-color: #f9fafb; /* Gray 50 */
+    font-weight: 600;
+    color: #374151; /* Gray 700 */
+}
+.heatmap-table tr:last-child td {
+    border-bottom: none;
+}
+.heatmap-table td {
+    color: #1f2937;
+    transition: background-color 0.2s;
+}
+.heatmap-table tr:hover td {
+    background-color: #eff6ff;
+}
+
+/* Color classes for correlation values */
+.heatmap-table .high-positive { background-color: #16a34a; color: white; } /* Green 600 */
+.heatmap-table .low-positive  { background-color: #86efac; color: #14532d; } /* Green 300 */
+.heatmap-table .neutral       { background-color: #f9fafb; color: #4b5563; } /* Gray 50 */
+.heatmap-table .low-negative  { background-color: #fca5a5; color: #7f1d1d; } /* Red 300 */
+.heatmap-table .high-negative { background-color: #dc2626; color: white; } /* Red 600 */
 
