@@ -1,19 +1,47 @@
-// --- Gemini API Configuration ---
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+/**
+ * @fileoverview This module handles all external API communications,
+ * including calls to the Gemini and Weather APIs.
+ */
+
+// --- Configuration ---
+// For production, these should be moved to a backend service to protect them.
+const API_CONFIG = {
+    GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+    WEATHER_API_URL: 'https://api.weatherapi.com/v1/history.json',
+};
 
 /**
- * Calls the Gemini API with the provided prompt.
- * @param {string} apiKey - The user's Gemini API key.
- * @param {string} prompt - The detailed text prompt for the AI.
- * @returns {Promise<string>} The text response from the API.
+ * Retrieves an API key from local storage.
+ * In a production environment, this should be replaced with a secure method.
+ * @param {('gemini' | 'weather')} serviceName - The service for which to get the key.
+ * @returns {string|null} The API key.
  */
-export async function callGemini(apiKey, prompt) {
-    if (!apiKey) {
-        throw new Error("Gemini API key is missing. Please add it in settings.");
+function getApiKey(serviceName) {
+    const key = localStorage.getItem(`${serviceName}ApiKey`);
+    if (!key) {
+        console.warn(`${serviceName} API key is missing from local storage.`);
     }
-    const fullUrl = `${GEMINI_API_URL}?key=${apiKey}`;
+    return key;
+}
+
+/**
+ * Calls the Gemini API with a prompt and expects a JSON response.
+ * @param {string} prompt - The detailed text prompt for the AI.
+ * @returns {Promise<object>} The parsed JSON object from the API response.
+ */
+export async function callGemini(prompt) {
+    const apiKey = getApiKey('gemini');
+    if (!apiKey) {
+        throw new Error("Gemini API key is missing. Please add it in the settings modal.");
+    }
+
+    const fullUrl = `${API_CONFIG.GEMINI_API_URL}?key=${apiKey}`;
     const requestBody = {
-        contents: [{ parts: [{ text: prompt }] }]
+        contents: [{ parts: [{ text: prompt }] }],
+        // Request a JSON response for more reliable parsing.
+        generationConfig: {
+            "response_mime_type": "application/json",
+        }
     };
 
     try {
@@ -25,39 +53,46 @@ export async function callGemini(apiKey, prompt) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(`API request failed: ${errorData.error?.message || response.status}`);
+            throw new Error(`Gemini API request failed: ${errorData.error?.message || response.statusText}`);
         }
 
         const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         
-        if (!text) {
+        if (!rawText) {
             throw new Error("Received an invalid or empty response from the Gemini API.");
         }
-        return text;
+
+        // The response from the API is a string that needs to be parsed into a JSON object.
+        return JSON.parse(rawText);
+
     } catch (error) {
-        console.error('Error calling Gemini API:', error);
+        console.error('Error calling or parsing Gemini API response:', error);
+        // Re-throw the error to be handled by the main application logic.
         throw error;
     }
 }
 
 /**
  * Fetches historical weather data for multiple locations concurrently.
- * @param {string} apiKey - The user's Weather API key.
- * @param {string[]} locations - An array of location names to fetch weather for.
+ * @param {string[]} locations - An array of location names.
  * @param {string} startDate - The start date in "YYYY-MM-DD" format.
  * @param {string} endDate - The end date in "YYYY-MM-DD" format.
- * @returns {Promise<{weatherData: object, failedLocations: string[]}>} An object containing the fetched data and a list of locations that failed.
+ * @returns {Promise<{weatherData: object, failedLocations: string[]}>} Contains fetched data and a list of failed locations.
  */
-export async function fetchWeatherForLocations(apiKey, locations, startDate, endDate) {
+export async function fetchWeatherForLocations(locations, startDate, endDate) {
+    const apiKey = getApiKey('weather');
     if (!apiKey) {
-        throw new Error("Weather API key is missing. Please add it in settings.");
+        console.warn("Weather API key is missing. Proceeding without weather data enrichment.");
+        return { weatherData: {}, failedLocations: locations };
     }
 
+    // Create a promise for each location to fetch its weather data.
     const weatherPromises = locations.map(location => 
         fetchSingleLocationWeather(apiKey, location, startDate, endDate)
     );
 
+    // Promise.allSettled allows all promises to complete, even if some fail.
     const results = await Promise.allSettled(weatherPromises);
 
     const weatherData = {};
@@ -77,39 +112,44 @@ export async function fetchWeatherForLocations(apiKey, locations, startDate, end
 }
 
 /**
- * Fetches historical weather for a single location over a date range.
+ * Fetches historical weather for a single location.
+ * Note: The WeatherAPI.com history endpoint only allows fetching one day at a time.
+ * This function iterates through the date range to collect the daily data.
  * @param {string} apiKey - The Weather API key.
  * @param {string} location - The location name.
  * @param {string} startDate - The start date.
  * @param {string} endDate - The end date.
- * @returns {Promise<Array<Object>>} A promise that resolves to an array of daily weather records.
+ * @returns {Promise<Array<Object>>} An array of daily weather records.
  */
 async function fetchSingleLocationWeather(apiKey, location, startDate, endDate) {
     const dailyData = [];
-    const currentDate = new Date(startDate);
+    let currentDate = new Date(startDate);
     const lastDate = new Date(endDate);
 
+    // Loop through each day in the date range.
     while (currentDate <= lastDate) {
         const dateString = currentDate.toISOString().split('T')[0];
-        const apiUrl = `https://api.weatherapi.com/v1/history.json?key=${apiKey}&q=${encodeURIComponent(location)}&dt=${dateString}`;
+        const apiUrl = `${API_CONFIG.WEATHER_API_URL}?key=${apiKey}&q=${encodeURIComponent(location)}&dt=${dateString}`;
         
         const response = await fetch(apiUrl);
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error.message);
+            throw new Error(`(${response.status}) ${errorData.error.message}`);
         }
         const data = await response.json();
         const forecastDay = data.forecast.forecastday[0];
         
-        dailyData.push({
-            date: forecastDay.date,
-            avg_temp_c: forecastDay.day.avgtemp_c,
-            precip_mm: forecastDay.day.totalprecip_mm,
-            wind_kph: forecastDay.day.maxwind_kph,
-            condition: forecastDay.day.condition.text,
-        });
+        if (forecastDay) {
+            dailyData.push({
+                date: forecastDay.date,
+                avg_temp_c: forecastDay.day.avgtemp_c,
+                precip_mm: forecastDay.day.totalprecip_mm,
+                wind_kph: forecastDay.day.maxwind_kph,
+                condition: forecastDay.day.condition.text,
+            });
+        }
+        // Move to the next day.
         currentDate.setDate(currentDate.getDate() + 1);
     }
     return dailyData;
 }
-

@@ -1,257 +1,258 @@
-    import { findTopWeatherCorrelation } from './statistics.js';
+import {
+    findTopWeatherCorrelation,
+    analyzeSeasonality,
+    detectPriceChanges,
+    analyzeSalesTrend,
+    analyzeSalesVolatility
+} from './statistics.js';
+import { Logger } from './logger.js';
 
-    /**
-     * Parses the user-uploaded sales file (CSV or JSON) with enhanced validation.
-     * @param {File} file - The file object from the input element.
-     * @returns {Promise<Array<Object>>} A promise that resolves to an array of sales records.
-     */
-    export function parseSalesFile(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const text = event.target.result;
-                    let data;
-                    if (file.name.endsWith('.csv')) {
-                        const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-                        if (lines.length < 2) throw new Error("CSV file must have a header and at least one data row.");
-                        const headers = lines[0].split(',').map(h => h.trim());
-                        data = lines.slice(1).map(line => {
-                            const values = line.split(',').map(v => v.trim());
-                            return headers.reduce((obj, header, index) => {
-                                obj[header] = values[index];
-                                return obj;
-                            }, {});
-                        });
-                    } else if (file.name.endsWith('.json')) {
-                        data = JSON.parse(text);
-                    } else {
-                        throw new Error("Unsupported file type. Please use .csv or .json");
-                    }
-                    
-                    if (!Array.isArray(data) || data.length === 0) {
-                        throw new Error("File is empty or not in a valid array format.");
-                    }
+// --- Analysis Configuration ---
+const MAX_PRODUCTS_FOR_AI = 25; // Limit the number of products sent to the AI to manage prompt size and cost.
 
-                    const requiredColumns = ['sku', 'location', 'date', 'sales', 'revenue'];
-                    if (!requiredColumns.every(col => col in data[0])) {
-                        throw new Error(`Input data is missing required columns. Ensure it has: ${requiredColumns.join(', ')}`);
-                    }
+// --- Helper Functions ---
 
-                    const cleanData = data.map(row => ({
-                        ...row,
-                        date: new Date(row.date).toISOString().split('T')[0],
-                        sales: parseFloat(row.sales) || 0,
-                        revenue: parseFloat(row.revenue) || 0,
-                    }));
-                    resolve(cleanData);
-                } catch (error) {
-                    reject(error);
+/**
+ * Validates the headers of the parsed Excel data to ensure critical columns exist.
+ * @param {string[]} headers - The array of header strings.
+ */
+function validateHeaders(headers) {
+    const requiredHeaders = ['STYLE', 'STYLE DESC', 'COLOR', 'RETAIL', 'COST'];
+    const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+    if (missingHeaders.length > 0) {
+        throw new Error(`The 'AP' sheet is missing required columns: ${missingHeaders.join(', ')}.`);
+    }
+}
+
+/**
+ * Parses the 'AP' sheet from the user's Assortment Plan Excel tool.
+ * This is the primary data ingestion function for the application.
+ * @param {File} file - The Excel file object from the input element.
+ * @returns {Promise<Array<Object>>} A promise resolving to an array of structured product sales records.
+ */
+export function parseSalesFile(file) {
+    return new Promise((resolve, reject) => {
+        if (typeof XLSX === 'undefined') {
+            return reject(new Error('SheetJS library is not loaded. Cannot read Excel file.'));
+        }
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const workbook = XLSX.read(event.target.result, { type: 'array' });
+                const apSheet = workbook.Sheets['AP'];
+                if (!apSheet) {
+                    throw new Error("The uploaded Excel file must contain a sheet named 'AP'.");
                 }
-            };
-            reader.onerror = () => reject(new Error("Error reading the file."));
-            reader.readAsText(file);
-        });
-    }
+                const jsonData = XLSX.utils.sheet_to_json(apSheet, { header: 1, defval: null });
 
-    /**
-     * Joins sales data with weather data based on date and location.
-     * @param {Array<Object>} salesData - Parsed sales records.
-     * @param {Object} weatherDataByLocation - Weather records from the API, keyed by location.
-     * @returns {Array<Object>} An array of combined sales and weather records.
-     */
-    export function joinSalesAndWeather(salesData, weatherDataByLocation) {
-        return salesData
-            .map(sale => {
-                const locationWeather = weatherDataByLocation[sale.location];
-                if (!locationWeather) return null;
+                const headerRowIndex = jsonData.findIndex(row => row && row.includes('DEPT'));
+                if (headerRowIndex === -1) throw new Error("Could not find a valid header row containing 'DEPT' in the 'AP' sheet.");
                 
-                const weatherForDay = locationWeather.find(w => w.date === sale.date);
-                return weatherForDay ? { ...sale, ...weatherForDay } : null;
-            })
-            .filter(Boolean);
-    }
+                const headers = jsonData[headerRowIndex];
+                validateHeaders(headers); // Validate required columns
+                
+                const year = jsonData[0] && jsonData[0][1] ? jsonData[0][1] : new Date().getFullYear();
+                const dataRows = jsonData.slice(headerRowIndex + 1);
+                const salesRecords = [];
+                const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-    /**
-     * Performs local statistical analysis on the joined data, grouped by location.
-     * @param {Array<Object>} joinedData - Combined sales and weather data.
-     * @returns {Object} An object containing aggregated stats and correlation results per location.
-     */
-    export function runLocalAnalysis(joinedData) {
-        const results = {
-            totalRevenue: 0,
-            totalSales: 0,
-            locations: {}
+                const unitsHeaderRowIndex = jsonData.findIndex(row => row && row.includes('UNITS'));
+                if (unitsHeaderRowIndex === -1) throw new Error("Could not locate the 'UNITS' sub-header row for sales data.");
+                const unitsHeaders = jsonData[unitsHeaderRowIndex];
+                
+                dataRows.forEach(row => {
+                    const style = row[headers.indexOf('STYLE')];
+                    if (!style || String(style).toLowerCase().includes('total')) return;
+
+                    const baseRecord = {
+                        dept: row[headers.indexOf('DEPT')],
+                        brand: row[headers.indexOf('BRAND')],
+                        style: style,
+                        styleDesc: row[headers.indexOf('STYLE DESC')],
+                        color: row[headers.indexOf('COLOR')],
+                        size: row[headers.indexOf('SIZE')],
+                        retailPrice: parseFloat(row[headers.indexOf('RETAIL')]) || 0,
+                        costPrice: parseFloat(row[headers.indexOf('COST')]) || 0,
+                        location: "DefaultStore"
+                    };
+
+                    months.forEach((month, monthIndex) => {
+                        const monthUnitIndex = unitsHeaders.indexOf(month);
+                        const unitsSold = monthUnitIndex > -1 ? parseInt(row[monthUnitIndex]) || 0 : 0;
+                        
+                        if (unitsSold > 0) {
+                            salesRecords.push({
+                                ...baseRecord,
+                                sku: `${baseRecord.style}-${baseRecord.color}-${baseRecord.size}`,
+                                date: new Date(year, monthIndex, 15).toISOString().split('T')[0],
+                                sales: unitsSold,
+                                revenue: unitsSold * baseRecord.retailPrice
+                            });
+                        }
+                    });
+                });
+
+                if (salesRecords.length === 0) {
+                    throw new Error("No valid monthly sales records could be parsed. Check the file format and data.");
+                }
+
+                resolve(salesRecords);
+
+            } catch (error) {
+                Logger.error("File Parsing Error", error);
+                reject(error);
+            }
+        };
+        reader.onerror = () => reject(new Error("Error reading the file."));
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+
+/**
+ * Joins sales data with weather data based on matching location and month.
+ */
+export function joinSalesAndWeather(salesData, weatherDataByLocation) {
+    return salesData.map(sale => {
+        const locationWeather = weatherDataByLocation[sale.location];
+        if (!locationWeather) return sale;
+
+        const saleMonth = sale.date.substring(0, 7); // YYYY-MM
+        const weatherForMonth = locationWeather.filter(w => w.date.startsWith(saleMonth));
+        if (weatherForMonth.length === 0) return sale;
+
+        const monthlyWeather = {
+            avg_temp_c: weatherForMonth.reduce((sum, d) => sum + d.avg_temp_c, 0) / weatherForMonth.length,
+            precip_mm: weatherForMonth.reduce((sum, d) => sum + d.precip_mm, 0),
         };
 
-        const dataByLocation = joinedData.reduce((acc, row) => {
-            acc[row.location] = acc[row.location] || [];
-            acc[row.location].push(row);
-            results.totalRevenue += row.revenue;
-            results.totalSales += row.sales;
-            return acc;
-        }, {});
+        return { ...sale, ...monthlyWeather };
+    }).filter(Boolean);
+}
 
-        const weatherVariables = ['avg_temp_c', 'precip_mm', 'wind_kph'];
+/**
+ * Performs a deep local analysis, calculating seasonality, price changes, and weather correlation.
+ */
+export function runLocalAnalysis(joinedData) {
+    const results = {
+        totalRevenue: joinedData.reduce((sum, r) => sum + r.revenue, 0),
+        totalSales: joinedData.reduce((sum, r) => sum + r.sales, 0),
+        products: {}
+    };
 
-        for (const location in dataByLocation) {
-            const locationData = dataByLocation[location];
-            results.locations[location] = {
-                totalRevenue: locationData.reduce((sum, r) => sum + r.revenue, 0),
-                totalSales: locationData.reduce((sum, r) => sum + r.sales, 0),
-                correlations: []
-            };
-            
-            const dataBySku = locationData.reduce((acc, row) => {
-                acc[row.sku] = acc[row.sku] || [];
-                acc[row.sku].push(row);
-                return acc;
-            }, {});
+    const dataBySku = joinedData.reduce((acc, row) => {
+        acc[row.sku] = acc[row.sku] || [];
+        acc[row.sku].push(row);
+        return acc;
+    }, {});
+    
+    const weatherVariables = ['avg_temp_c', 'precip_mm'];
 
-            for (const sku in dataBySku) {
-                const skuData = dataBySku[sku].sort((a, b) => new Date(a.date) - new Date(b.date));
-                if (skuData.length > 10) { // Require a minimum number of data points
-                    const topCorrelation = findTopWeatherCorrelation(skuData, weatherVariables);
-                    if (topCorrelation) {
-                        results.locations[location].correlations.push(topCorrelation);
-                    }
+    for (const sku in dataBySku) {
+        const productData = dataBySku[sku].sort((a, b) => new Date(a.date) - new Date(b.date));
+        if (productData.length < 2) continue;
+
+        const firstRecord = productData[0];
+        
+        results.products[sku] = {
+            sku,
+            styleDesc: firstRecord.styleDesc,
+            color: firstRecord.color,
+            brand: firstRecord.brand,
+            totalSales: productData.reduce((sum, r) => sum + r.sales, 0),
+            averagePrice: firstRecord.retailPrice,
+            costPrice: firstRecord.costPrice,
+            priceProfile: detectPriceChanges(productData),
+            seasonality: analyzeSeasonality(productData),
+            weatherCorrelation: findTopWeatherCorrelation(productData, weatherVariables),
+            salesTrend: analyzeSalesTrend(productData),
+            salesVolatility: analyzeSalesVolatility(productData),
+        };
+    }
+
+    return results;
+}
+
+/**
+ * Prepares a highly detailed payload for Gemini, asking it to act as an expert retail planner
+ * and to return a structured JSON response.
+ */
+export function preparePayload(localAnalysis, budget) {
+    const topProducts = Object.values(localAnalysis.products)
+        .sort((a, b) => b.totalSales - a.totalSales)
+        .slice(0, MAX_PRODUCTS_FOR_AI);
+
+    const productDataForPrompt = topProducts.map(p => ({
+        sku: p.sku,
+        description: `${p.styleDesc} - ${p.color}`,
+        historicalSales: `${p.totalSales} units sold`,
+        priceProfile: `${p.priceProfile.summary}. Average retail price: $${p.averagePrice.toFixed(2)}`,
+        seasonalityProfile: p.seasonality.summary,
+        weatherDriver: p.weatherCorrelation ? `Strongest correlation of ${p.weatherCorrelation.correlation.toFixed(2)} with ${p.weatherCorrelation.weatherVariable}.` : 'No significant weather correlation.',
+        salesTrend: p.salesTrend.summary,
+        salesVolatility: p.salesVolatility.summary,
+        costPrice: p.costPrice
+    }));
+
+    const systemPrompt = `You are an expert retail buyer and assortment planner. Your task is to analyze product performance data to build a strategic, data-driven purchasing plan. Your response must be a valid JSON object. Do not include any text, notes, or markdown formatting before or after the JSON object.`;
+
+    const userPrompt = `
+        Total allocated budget: $${budget.toLocaleString()}.
+        
+        Product Performance Data:
+        ${JSON.stringify(productDataForPrompt, null, 2)}
+        
+        Based on the data provided, generate a list of purchasing recommendations. For each product, calculate an "Opportunity Score" from 1-100 by weighing all factors (high sales, positive trends, and stability should yield a higher score). Then, provide a concise reasoning, a clear recommendation, a suggested number of units to buy, and the estimated cost (suggested units * cost price). 
+        Include the sales trend and volatility summaries in your output for each product.
+    `;
+
+    const responseSchema = {
+        type: "OBJECT",
+        properties: {
+            "recommendations": {
+                type: "ARRAY",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        "sku": { "type": "STRING" },
+                        "opportunityScore": { "type": "NUMBER", "description": "A score from 1 to 100 weighing all factors." },
+                        "reasoning": { "type": "STRING", "description": "Concise, data-driven explanation for the score." },
+                        "recommendation": { "type": "STRING", "enum": ["BUY/REPEAT", "CONSIDER SIMILAR", "REDUCE/DISCONTINUE"] },
+                        "suggestedUnits": { "type": "NUMBER" },
+                        "estimatedCost": { "type": "NUMBER" },
+                        "salesTrendSummary": { "type": "STRING", "description": "The summary of the sales trend analysis." },
+                        "salesVolatilitySummary": { "type": "STRING", "description": "The summary of the sales volatility analysis." }
+                    },
+                    required: ["sku", "opportunityScore", "reasoning", "recommendation", "suggestedUnits", "estimatedCost", "salesTrendSummary", "salesVolatilitySummary"]
                 }
             }
-            results.locations[location].correlations.sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation));
+        },
+        required: ["recommendations"]
+    };
+
+    return { systemPrompt, userPrompt, responseSchema };
+}
+
+/**
+ * Parses the JSON response from the Gemini API and sorts the recommendations.
+ * @param {string} responseText - The raw JSON string from the API.
+ * @returns {Array<Object>} A sorted array of recommendation objects.
+ */
+export function processGeminiResponse(responseText) {
+    try {
+        const parsedJson = JSON.parse(responseText);
+        if (!parsedJson.recommendations || !Array.isArray(parsedJson.recommendations)) {
+            throw new Error("AI response is missing the 'recommendations' array.");
         }
-
-        return results;
-    }
-
-    /**
-     * Prepares a detailed, structured payload for the Gemini API.
-     * @param {Object} localAnalysis - The results from runLocalAnalysis.
-     * @returns {string} A detailed prompt string for the AI.
-     */
-    export function preparePayload(localAnalysis) {
-        let prompt = `
-            **AI-Powered Sales & Weather Analysis**
-
-            **Objective:** Analyze the provided statistical correlations between product sales and weather conditions for different store locations. For each significant correlation, provide a deep, actionable insight.
-
-            **Analysis Input:**
-            Below are the top statistical findings for each location. A "lag" indicates a delayed effect (e.g., a lag of 2 means sales change 2 days after the weather event).
-        `;
-
-        for (const location in localAnalysis.locations) {
-            const locData = localAnalysis.locations[location];
-            if (locData.correlations.length > 0) {
-                prompt += `\n\n--- LOCATION: ${location} ---\n`;
-                locData.correlations.slice(0, 3).forEach(c => {
-                    prompt += `- SKU ${c.sku} sales show a correlation of ${c.correlation.toFixed(2)} with ${c.weatherVariable} at a ${c.bestLag}-day lag.\n`;
-                });
-            }
-        }
-
-        prompt += `
-            \n**Your Task:**
-            For each location, provide a list of insights based on the correlations above. If you find no strong correlations for a location, state that.
-            For each insight, use the following structured format exactly:
-
-            **LOCATION:** [Location Name]
-            **SKU:** [SKU Code]
-            **FINDING:** [A concise, one-sentence summary of the relationship. Example: "Sales of winter jackets spike 2 days after a significant temperature drop."]
-            **THEORY:** [A plausible explanation for this behavior. Example: "Customers likely assess their current winter gear after feeling the first real cold snap and purchase new jackets shortly after."]
-            **CONFIDENCE:** [A numerical score from 1 to 5, representing your confidence in the finding.]
-            **RECOMMENDATION:** [A specific, actionable business recommendation. Example: "Launch a targeted social media ad campaign for this SKU to users in this location 1 day after the first major temperature drop of the season."]
-        `;
-        return prompt;
-    }
-
-    /**
-     * Parses the structured text response from the Gemini API.
-     * @param {string} rawText - The raw text response.
-     * @returns {Object} An object of structured insights, keyed by location.
-     */
-    export function parseGeminiResponse(rawText) {
-        const insightsByLocation = {};
-        const sections = rawText.split('**LOCATION:**').slice(1);
-
-        sections.forEach(section => {
-            const lines = section.trim().split('\n');
-            const locationName = lines[0].trim();
-            if (!insightsByLocation[locationName]) {
-                insightsByLocation[locationName] = [];
-            }
-
-            const insight = {};
-            lines.forEach(line => {
-                if (line.startsWith('**SKU:**')) insight.sku = line.replace('**SKU:**', '').trim();
-                if (line.startsWith('**FINDING:**')) insight.finding = line.replace('**FINDING:**', '').trim();
-                if (line.startsWith('**THEORY:**')) insight.theory = line.replace('**THEORY:**', '').trim();
-                if (line.startsWith('**CONFIDENCE:**')) insight.confidence = parseInt(line.match(/\d+/)?.[0] || '3', 10);
-                if (line.startsWith('**RECOMMENDATION:**')) insight.recommendation = line.replace('**RECOMMENDATION:**', '').trim();
-            });
-            
-            if (insight.sku && insight.finding) {
-                insightsByLocation[locationName].push(insight);
-            }
+        const recommendations = parsedJson.recommendations;
+        // Sort by score descending
+        return recommendations.sort((a, b) => b.opportunityScore - a.opportunityScore);
+    } catch (error) {
+        Logger.error("Error parsing Gemini JSON response", {
+            error: error.message,
+            responseText: responseText
         });
-
-        return insightsByLocation;
+        throw new Error("The AI returned an invalid response. Please check the logs for more details.");
     }
-
-
-    // --- EXPORT FUNCTIONS ---
-
-    /**
-     * Exports the user's curated action plan to an Excel file.
-     * @param {Array<Object>} plannerItems - The items from the planner.
-     */
-    export function exportPlannerToExcel(plannerItems) {
-        if (typeof XLSX === 'undefined') throw new Error('SheetJS library is not loaded.');
-
-        const wb = XLSX.utils.book_new();
-        const sheetData = [["Location", "SKU", "Finding", "Recommendation", "Confidence (1-5)"]];
-        plannerItems.forEach(item => {
-            sheetData.push([item.location, item.sku, item.finding, item.recommendation, item.confidence]);
-        });
-        const ws = XLSX.utils.aoa_to_sheet(sheetData);
-        XLSX.utils.book_append_sheet(wb, ws, "Action Plan");
-        XLSX.writeFile(wb, "AI_Sales_Action_Plan.xlsx");
-    }
-
-
-    /**
-     * Exports the user's curated action plan to a PDF file.
-     * @param {Array<Object>} plannerItems - The items from the planner.
-     */
-    export function exportPlannerToPDF(plannerItems) {
-        if (typeof jspdf === 'undefined') throw new Error('jsPDF library is not loaded.');
-        const { jsPDF } = jspdf;
-        const doc = new jsPDF();
-        let y = 20;
-
-        doc.setFontSize(18);
-        doc.text("AI Sales Action Plan", 105, y, { align: 'center' });
-        y += 8;
-        doc.setFontSize(11);
-        doc.text("Generated on: " + new Date().toLocaleDateString(), 105, y, { align: 'center' });
-        y += 15;
-
-        plannerItems.forEach((item, index) => {
-            if (y > 260) { doc.addPage(); y = 20; }
-            
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text(`Action ${index + 1}: ${item.sku} @ ${item.location}`, 14, y);
-            y += 7;
-
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
-            doc.text(`Finding: ${item.finding}`, 16, y, { maxWidth: 178 });
-            y += 10;
-            doc.text(`Recommendation: ${item.recommendation}`, 16, y, { maxWidth: 178 });
-            y += 10;
-            doc.text(`Confidence: ${'★'.repeat(item.confidence)}${'☆'.repeat(5 - item.confidence)}`, 16, y);
-            y += 15;
-        });
-
-        doc.save("AI_Sales_Action_Plan.pdf");
-    }
+}
 
