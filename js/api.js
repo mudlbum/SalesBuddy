@@ -1,155 +1,57 @@
-/**
- * @fileoverview This module handles all external API communications,
- * including calls to the Gemini and Weather APIs.
- */
+// This file simulates calls to a backend AI service (like Gemini).
+// In a real application, this would make a network request to your server.
 
-// --- Configuration ---
-// For production, these should be moved to a backend service to protect them.
-const API_CONFIG = {
-    GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
-    WEATHER_API_URL: 'https://api.weatherapi.com/v1/history.json',
-};
+export async function callGeminiAPI(prompt, context = {}) {
+    console.log("Calling Fake Gemini API with prompt:", prompt, "and context:", context);
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-/**
- * Retrieves an API key from local storage.
- * In a production environment, this should be replaced with a secure method.
- * @param {('gemini' | 'weather')} serviceName - The service for which to get the key.
- * @returns {string|null} The API key.
- */
-function getApiKey(serviceName) {
-    const key = localStorage.getItem(`${serviceName}ApiKey`);
-    if (!key) {
-        console.warn(`${serviceName} API key is missing from local storage.`);
-    }
-    return key;
-}
+    switch (prompt) {
+        case "GET_TRENDS":
+            return `
+                <ul class="list-disc pl-5 space-y-2">
+                    <li><strong>Sustainable Materials:</strong> Consumer interest in eco-friendly footwear is up 25% year-over-year. Prioritize products with recycled materials.</li>
+                    <li><strong>Gorpcore Aesthetic:</strong> Rugged, outdoor-inspired footwear like hiking boots and trail runners continue to trend in urban markets. The 'Urban Hiker Boot' aligns perfectly with this.</li>
+                    <li><strong>Comfort is King:</strong> Demand for cushioned soles and comfortable loafers for 'work from home' and casual office wear remains strong.</li>
+                </ul>`;
 
-/**
- * Calls the Gemini API with a prompt and expects a JSON response.
- * @param {string} prompt - The detailed text prompt for the AI.
- * @returns {Promise<object>} The parsed JSON object from the API response.
- */
-export async function callGemini(prompt) {
-    const apiKey = getApiKey('gemini');
-    if (!apiKey) {
-        throw new Error("Gemini API key is missing. Please add it in the settings modal.");
-    }
+        case "ANALYZE_PLAN":
+             if (context.itemCount === 0) return `<p>Your plan is empty. Add some products from the marketplace to get an analysis.</p>`;
+             let analysis = `<p>Based on your selection of ${context.itemCount} styles:</p><ul class="list-disc pl-5 space-y-2 mt-2">`;
+             if (!context.hasBoots) analysis += `<li><strong>Opportunity:</strong> Your plan is missing boots. Given the strong 'Gorpcore' trend, consider adding the 'Urban Hiker Boot' or 'Winter Snow Boot' to capture this market.</li>`;
+             if (!context.hasSandals) analysis += `<li><strong>Gap:</strong> There are no sandals in your plan. You may be missing out on the high-margin summer season sales.</li>`;
+             analysis += `<li><strong>Strength:</strong> You have a good mix of casual footwear like loafers and slip-ons, which aligns with the current comfort trend.</li></ul>`;
+             return analysis;
 
-    const fullUrl = `${API_CONFIG.GEMINI_API_URL}?key=${apiKey}`;
-    const requestBody = {
-        contents: [{ parts: [{ text: prompt }] }],
-        // Request a JSON response for more reliable parsing.
-        generationConfig: {
-            "response_mime_type": "application/json",
-        }
-    };
-
-    try {
-        const response = await fetch(fullUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Gemini API request failed: ${errorData.error?.message || response.statusText}`);
-        }
-
-        const data = await response.json();
-        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        case "GENERATE_FINANCIAL_SUMMARY":
+            const { budget, transactions } = context;
+            if (transactions.length === 0) {
+                 return `<p>There are no planned orders to summarize. Add items to your assortment plan first.</p>`
+            }
+            return `
+                <div class="space-y-3">
+                     <h4 class="font-semibold text-lg">Q4 Financial Outlook</h4>
+                     <p>Your current plan commits <strong>$${budget.spent.toLocaleString()}</strong> of your <strong>$${budget.total.toLocaleString()}</strong> budget, which is a commitment of <strong>${((budget.spent / budget.total) * 100).toFixed(1)}%</strong>.</p>
+                     <p>This leaves <strong>$${budget.remaining.toLocaleString()}</strong> for in-season opportunities or re-orders.</p>
+                     <p>The plan is well-diversified across ${transactions.length} purchase orders. Review vendor terms for potential early payment discounts to improve margins.</p>
+                </div>
+            `;
         
-        if (!rawText) {
-            throw new Error("Received an invalid or empty response from the Gemini API.");
-        }
+        case "CHAT_QUERY":
+             return `Based on the current assortment plan, the focus on casual wear is strong. To improve, consider adding a product that aligns with the 'Gorpcore' trend, like a hiking boot, to capture a different market segment.`;
 
-        // The response from the API is a string that needs to be parsed into a JSON object.
-        return JSON.parse(rawText);
+        case "PERSONA_CHAT_QUERY":
+            const { persona, query } = context;
+            if (persona === 'HQ Buyer') {
+                return `Thanks for reaching out. Looking at the regional data, your plan seems solid, but let's keep an eye on the budget. We need to make sure we have enough left for Q1 opportunities. Let me know if you see any high-performing items we should double down on.`;
+            }
+            if (persona === 'Vendor Rep') {
+                return `Hi there! Good to hear from you. Regarding your question: Yes, the 'Urban Hiker Boot' has been very popular. We have plenty of stock in all sizes right now, and the current lead time for a new order is about 2-3 weeks. Let me know if you need the latest spec sheet.`;
+            }
+            return `This is a canned response from ${persona}.`;
 
-    } catch (error) {
-        console.error('Error calling or parsing Gemini API response:', error);
-        // Re-throw the error to be handled by the main application logic.
-        throw error;
+        default:
+            return "I'm sorry, I can't provide information on that right now.";
     }
 }
 
-/**
- * Fetches historical weather data for multiple locations concurrently.
- * @param {string[]} locations - An array of location names.
- * @param {string} startDate - The start date in "YYYY-MM-DD" format.
- * @param {string} endDate - The end date in "YYYY-MM-DD" format.
- * @returns {Promise<{weatherData: object, failedLocations: string[]}>} Contains fetched data and a list of failed locations.
- */
-export async function fetchWeatherForLocations(locations, startDate, endDate) {
-    const apiKey = getApiKey('weather');
-    if (!apiKey) {
-        console.warn("Weather API key is missing. Proceeding without weather data enrichment.");
-        return { weatherData: {}, failedLocations: locations };
-    }
-
-    // Create a promise for each location to fetch its weather data.
-    const weatherPromises = locations.map(location => 
-        fetchSingleLocationWeather(apiKey, location, startDate, endDate)
-    );
-
-    // Promise.allSettled allows all promises to complete, even if some fail.
-    const results = await Promise.allSettled(weatherPromises);
-
-    const weatherData = {};
-    const failedLocations = [];
-
-    results.forEach((result, index) => {
-        const location = locations[index];
-        if (result.status === 'fulfilled') {
-            weatherData[location] = result.value;
-        } else {
-            failedLocations.push(location);
-            console.error(`Failed to fetch weather for ${location}:`, result.reason);
-        }
-    });
-
-    return { weatherData, failedLocations };
-}
-
-/**
- * Fetches historical weather for a single location.
- * Note: The WeatherAPI.com history endpoint only allows fetching one day at a time.
- * This function iterates through the date range to collect the daily data.
- * @param {string} apiKey - The Weather API key.
- * @param {string} location - The location name.
- * @param {string} startDate - The start date.
- * @param {string} endDate - The end date.
- * @returns {Promise<Array<Object>>} An array of daily weather records.
- */
-async function fetchSingleLocationWeather(apiKey, location, startDate, endDate) {
-    const dailyData = [];
-    let currentDate = new Date(startDate);
-    const lastDate = new Date(endDate);
-
-    // Loop through each day in the date range.
-    while (currentDate <= lastDate) {
-        const dateString = currentDate.toISOString().split('T')[0];
-        const apiUrl = `${API_CONFIG.WEATHER_API_URL}?key=${apiKey}&q=${encodeURIComponent(location)}&dt=${dateString}`;
-        
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`(${response.status}) ${errorData.error.message}`);
-        }
-        const data = await response.json();
-        const forecastDay = data.forecast.forecastday[0];
-        
-        if (forecastDay) {
-            dailyData.push({
-                date: forecastDay.date,
-                avg_temp_c: forecastDay.day.avgtemp_c,
-                precip_mm: forecastDay.day.totalprecip_mm,
-                wind_kph: forecastDay.day.maxwind_kph,
-                condition: forecastDay.day.condition.text,
-            });
-        }
-        // Move to the next day.
-        currentDate.setDate(currentDate.getDate() + 1);
-    }
-    return dailyData;
-}

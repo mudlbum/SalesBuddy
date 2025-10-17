@@ -1,185 +1,205 @@
-/* --- Base & Layout --- */
-:root {
-    --primary-blue: #2563eb;
-    --primary-blue-hover: #1d4ed8;
-    --score-high: #16a34a;
-    --score-medium: #f59e0b;
-    --score-low: #ef4444;
-    --card-bg: #ffffff;
-    --card-border: #e5e7eb;
-    --text-primary: #1f2937;
-    --text-secondary: #6b7280;
-}
-
 body {
     font-family: 'Inter', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+}
+
+.sidebar-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.sidebar-icon.active {
+    background-color: #3b82f6; /* bg-blue-500 */
+    color: white;
+}
+
+/* Modal styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 100; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* --- Chat Widget Styles --- */
+.chat-widget {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 999;
+}
+
+.chat-icon-button {
+    background-color: #3b82f6;
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    border: none;
+    transition: transform 0.2s ease-in-out;
+}
+
+.chat-icon-button:hover {
+    transform: scale(1.1);
+}
+
+.chat-popup {
+    display: none;
+    position: absolute;
+    bottom: 80px; /* Position above the icon */
+    right: 0;
+    width: 350px;
+    height: 500px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.95);
+    opacity: 0;
+    transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+.chat-popup.show {
+    display: flex;
+    transform: scale(1);
+    opacity: 1;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.chat-user-pills {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    gap: 0.5rem;
     background-color: #f9fafb;
 }
 
-/* --- Input Controls --- */
-.input-label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+.user-pill {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    background-color: #e5e7eb;
+    color: #4b5563;
 }
 
-.file-input {
-    @apply text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer;
+.user-pill.active {
+    background-color: #3b82f6;
+    color: white;
 }
 
-/* --- Recommendation Cards --- */
-.recommendation-card {
-    background-color: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    padding: 1.5rem;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    opacity: 0; /* Initially hidden for animation */
-    animation: card-pop-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-
-.recommendation-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-/* Staggered animation for cards */
-.recommendation-card:nth-child(1) { animation-delay: 0.05s; }
-.recommendation-card:nth-child(2) { animation-delay: 0.1s; }
-.recommendation-card:nth-child(3) { animation-delay: 0.15s; }
-.recommendation-card:nth-child(4) { animation-delay: 0.2s; }
-.recommendation-card:nth-child(5) { animation-delay: 0.25s; }
-.recommendation-card:nth-child(6) { animation-delay: 0.3s; }
-
-
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    border-bottom: 1px solid var(--card-border);
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
-}
-
-.card-title {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.item-checkbox {
-    @apply h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer;
-}
-
-.card-body {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-}
-
-.score-gauge {
-    width: 80px;
-    height: 80px;
-    position: relative;
-}
-
-.score-gauge-circle {
-    fill: none;
-    stroke-width: 8;
-    transform: rotate(-90deg);
-    transform-origin: 50% 50%;
-    transition: stroke-dashoffset 0.8s ease-out;
-}
-
-.score-gauge-bg {
-    stroke: #e5e7eb;
-}
-
-.score-gauge-fg {
-    stroke: var(--score-color, var(--score-low));
-    stroke-linecap: round;
-}
-
-.score-text {
-    font-size: 1.25rem;
-    font-weight: 700;
-    fill: var(--text-primary);
-}
-
-.card-metrics {
+.chat-messages {
     flex-grow: 1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     gap: 0.75rem;
 }
 
-.metric-item {
-    font-size: 0.875rem;
+.message-bubble {
+    padding: 0.75rem 1rem;
+    border-radius: 1.25rem;
+    max-width: 80%;
+    line-height: 1.4;
+    font-size: 0.9rem;
 }
 
-.metric-label {
-    color: var(--text-secondary);
-    display: block;
+.message-bubble.sent {
+    background-color: #3b82f6;
+    color: white;
+    border-bottom-right-radius: 0.5rem;
+    align-self: flex-end;
 }
 
-.metric-value {
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 1rem;
+.message-bubble.received {
+    background-color: #e5e7eb;
+    color: #1f2937;
+    border-bottom-left-radius: 0.5rem;
+    align-self: flex-start;
 }
 
-.card-footer {
-    margin-top: 1.25rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--card-border);
-}
-
-.reasoning-text {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    line-height: 1.5;
-}
-.reasoning-text strong {
-    color: var(--text-primary);
+.message-bubble.received-loading {
+    align-self: flex-start;
+    padding: 0.75rem;
 }
 
 
-/* --- Planner Summary --- */
-.summary-metric {
-    @apply flex justify-between items-center border-b border-gray-200 pb-2;
-}
-.summary-label {
-    @apply text-sm text-gray-600;
-}
-.summary-value {
-    @apply text-base font-semibold text-gray-800;
+.chat-input-area {
+    display: flex;
+    padding: 1rem;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
 }
 
-#budget-remaining.negative {
-    color: #dc2626; /* Red 600 */
+.chat-input {
+    flex-grow: 1;
+    border: 1px solid #d1d5db;
+    border-radius: 9999px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    outline: none;
 }
 
-.export-button {
-    @apply w-full text-center font-medium py-2 px-4 rounded-md text-sm transition;
+.chat-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-
-/* --- Loading Overlay --- */
-.loading-overlay {
-    @apply fixed inset-0 bg-black bg-opacity-60 z-50 flex flex-col items-center justify-center;
-    backdrop-filter: blur(4px);
+.chat-send-btn {
+    margin-left: 0.5rem;
+    background: none;
+    border: none;
+    color: #3b82f6;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.loading-spinner {
-    @apply w-12 h-12 border-4 border-t-transparent border-white rounded-full animate-spin;
-}
-
-.loading-text {
-    @apply mt-4 text-lg font-semibold text-white;
-}
-
-/* --- General Components --- */
-button:disabled {
-    @apply bg-gray-400 cursor-not-allowed;
-}
