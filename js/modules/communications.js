@@ -4,6 +4,7 @@ import { callGeminiAPI } from '../api.js';
 const conversationHistories = {};
 const unreadStatus = {}; // Tracks unread messages for each persona
 let currentPersona = 'AI Assistant';
+let isToggleInitialized = false; // Flag to check if the toggle has been set up
 
 // --- DOM ELEMENTS ---
 let chatPopup, openChatBtn, chatWindow, chatInput, chatSendBtn, userPillsContainer, modeToggle;
@@ -31,20 +32,17 @@ function init() {
     });
     userPillsContainer.addEventListener('click', handlePersonaChange);
     
-    // Defer initialization until the next paint cycle to ensure all styles are applied
-    requestAnimationFrame(() => {
-        // Initialize the mode toggle functionality
-        initModeToggle();
+    // Initialize the mode toggle functionality (event listeners only)
+    initModeToggle();
+
+    // Set the initial active persona based on the DOM
+    const initialActivePill = userPillsContainer.querySelector('.user-pill.active');
+    if (initialActivePill) {
+        currentPersona = initialActivePill.dataset.persona;
+    }
     
-        // Set the initial active persona based on the DOM to ensure JS state is in sync
-        const initialActivePill = userPillsContainer.querySelector('.user-pill.active');
-        if (initialActivePill) {
-            currentPersona = initialActivePill.dataset.persona;
-        }
-        
-        // Pre-populate all conversations and mark them as unread
-        initializeAllConversations();
-    });
+    // Pre-populate all conversations and mark them as unread to show notification dots on load
+    initializeAllConversations();
 }
 
 function initializeAllConversations() {
@@ -76,38 +74,51 @@ function toggleChatPopup() {
     const isOpen = chatPopup.classList.toggle('show');
     openChatBtn.classList.toggle('is-open');
 
-    // If we are opening the chat, render the current conversation and mark it as read
+    // If we are opening the chat...
     if (isOpen) {
+        // ...render the current conversation...
         renderConversation();
+        // ...mark it as read...
         markConversationAsRead(currentPersona);
+        // ...and initialize the toggle slider's position for the first time.
+        if (!isToggleInitialized) {
+            const firstButton = modeToggle.querySelector('.chat-mode-btn');
+            setActiveButton(firstButton);
+            isToggleInitialized = true;
+        }
     }
 }
 
 function initModeToggle() {
     if (!modeToggle) return;
     
-    const slider = document.getElementById('chat-mode-slider');
-    const buttons = modeToggle.querySelectorAll('.chat-mode-btn');
-
-    function setActiveButton(buttonEl) {
-        if (!buttonEl) return;
-        buttons.forEach(btn => btn.classList.remove('active'));
-        buttonEl.classList.add('active');
-        slider.style.width = `${buttonEl.offsetWidth}px`;
-        slider.style.transform = `translateX(${buttonEl.offsetLeft - slider.offsetLeft}px)`;
-        chatInput.placeholder = `Type your ${buttonEl.dataset.mode}...`;
-    }
-
-    const firstButton = buttons[0];
-    // Use a small timeout to ensure the element has dimensions before calculating
-    setTimeout(() => setActiveButton(firstButton), 50);
-
     modeToggle.addEventListener('click', (e) => {
         const clickedButton = e.target.closest('.chat-mode-btn');
         if (clickedButton) {
             setActiveButton(clickedButton);
         }
     });
+}
+
+function setActiveButton(buttonEl) {
+    if (!buttonEl || !modeToggle) return;
+    
+    const slider = document.getElementById('chat-mode-slider');
+    const buttons = modeToggle.querySelectorAll('.chat-mode-btn');
+    
+    // Check for visibility. If not visible, we can't calculate position.
+    if (buttonEl.offsetWidth === 0) return;
+
+    buttons.forEach(btn => btn.classList.remove('active'));
+    buttonEl.classList.add('active');
+    
+    // The slider is positioned relative to the toggle container.
+    // We calculate the button's left position relative to the container and subtract the slider's own starting offset.
+    const containerPadding = 4; // Corresponds to p-1 in Tailwind
+    slider.style.width = `${buttonEl.offsetWidth}px`;
+    slider.style.transform = `translateX(${buttonEl.offsetLeft - containerPadding}px)`;
+    
+    chatInput.placeholder = `Type your ${buttonEl.dataset.mode}...`;
 }
 
 
@@ -218,7 +229,7 @@ function addMessageToChat(text, type) {
     bubble.className = `message-bubble ${type}`;
     
     if (type === 'received-loading') {
-        bubble.innerHTML = `<div class="spinner-dots"><div></div><div></div><div></div></div>`;
+        bubble.innerHTML = `<div class="spinner-dots-small"><div></div><div></div><div></div></div>`;
     } else {
         bubble.innerHTML = text; // Use innerHTML to allow for formatting like lists
     }

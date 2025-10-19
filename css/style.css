@@ -14,43 +14,41 @@ body {
     color: white;
 }
 
-/* Modal styles */
-.modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 100; /* Sit on top */
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
-    -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
+/* --- AI Suggestion Balloon --- */
+#ai-balloon-container {
+    position: fixed;
+    z-index: 1000;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+    opacity: 0;
 }
 
-.modal-content {
-    background-color: #fefefe;
-    margin: 10% auto;
-    padding: 24px;
-    border: 1px solid #e5e7eb;
-    width: 90%;
-    max-width: 500px;
+#ai-balloon-content {
+    background-color: white;
+    padding: 1rem;
     border-radius: 0.75rem;
-    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
-    animation: slide-down 0.3s ease-out;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e5e7eb;
+    max-width: 350px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #374151;
+    pointer-events: auto;
+    transform-origin: center center;
+    animation: balloon-pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-@keyframes slide-down {
-    from {
+@keyframes balloon-pop-in {
+    0% {
         opacity: 0;
-        transform: translateY(-20px);
+        transform: scale(0.9);
     }
-    to {
+    100% {
         opacity: 1;
-        transform: translateY(0);
+        transform: scale(1);
     }
 }
+
 
 .spinner {
     border: 4px solid #f3f3f3; /* Light grey */
@@ -61,17 +59,16 @@ body {
     animation: spin 1s linear infinite;
 }
 
-.spinner-dots div {
-    width: 8px;
-    height: 8px;
+.spinner-dots-small div {
+    width: 6px;
+    height: 6px;
     background-color: #9ca3af;
     border-radius: 50%;
     display: inline-block;
     animation: bounce 1.4s infinite ease-in-out both;
 }
-
-.spinner-dots div:nth-child(1) { animation-delay: -0.32s; }
-.spinner-dots div:nth-child(2) { animation-delay: -0.16s; }
+.spinner-dots-small div:nth-child(1) { animation-delay: -0.32s; }
+.spinner-dots-small div:nth-child(2) { animation-delay: -0.16s; }
 
 
 @keyframes spin {
@@ -106,7 +103,21 @@ body {
     cursor: pointer;
     border: none;
     transition: transform 0.2s ease-in-out, background-color 0.2s;
+    position: relative;
 }
+
+.chat-icon-button.has-unread-main::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 12px;
+    height: 12px;
+    background-color: #ef4444;
+    border: 2px solid white;
+    border-radius: 50%;
+}
+
 
 .chat-icon-button:hover {
     transform: scale(1.1);
@@ -159,26 +170,22 @@ body {
     flex-shrink: 0;
 }
 
-/* --- NEW STYLES for Chat Mode Toggle --- */
 #chat-mode-toggle {
     transition: background-color 0.3s ease;
 }
 
 #chat-mode-slider {
-    /* Fun elastic transition */
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .chat-mode-btn {
-    color: #6b7280; /* Default text color: gray-500 */
+    color: #6b7280; 
     transition: color 0.3s ease-in-out;
 }
 
 .chat-mode-btn.active {
-    color: #3b82f6; /* Active text color: blue-500 */
+    color: #3b82f6; 
 }
-/* --- END of Chat Mode Toggle Styles --- */
-
 
 .chat-user-pills {
     padding: 0.75rem 1rem;
@@ -203,6 +210,19 @@ body {
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
                 background-color 0.3s ease,
                 color 0.3s ease;
+    position: relative;
+}
+
+.user-pill.has-unread::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    background-color: #3b82f6;
+    border-radius: 50%;
+    border: 1px solid #f9fafb;
 }
 
 .user-pill:not(.active):hover {
@@ -244,7 +264,7 @@ body {
     align-self: flex-end;
 }
 
-.message-bubble.received {
+.message-bubble.received, .message-bubble.received-loading {
     background-color: #e5e7eb;
     color: #1f2937;
     border-bottom-left-radius: 0.5rem;
@@ -252,11 +272,8 @@ body {
 }
 
 .message-bubble.received-loading {
-    align-self: flex-start;
     padding: 0.75rem;
-    background-color: #e5e7eb;
 }
-
 
 .chat-input-area {
     display: flex;
@@ -304,26 +321,28 @@ body {
 #toast-container {
     position: fixed;
     bottom: 1rem;
-    right: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: center;
     gap: 0.5rem;
 }
 
 .toast {
-    background-color: #2d3748;
+    background-color: rgba(17, 24, 39, 0.85);
     color: white;
     padding: 0.75rem 1.25rem;
-    border-radius: 0.5rem;
+    border-radius: 9999px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     display: flex;
     align-items: center;
     gap: 0.5rem;
     opacity: 0;
     transform: translateY(20px);
-    animation: toast-in 0.3s forwards;
+    animation: toast-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    backdrop-filter: blur(4px);
 }
 
 .toast.fade-out {
@@ -346,5 +365,171 @@ body {
         opacity: 0;
         transform: translateY(20px);
     }
+}
+
+
+/* --- Assortment Planner Specific Styles --- */
+.trend-infographic .bg-blue-500 { transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1); }
+.trend-infographic .bg-green-500 { transition: width 0.9s cubic-bezier(0.25, 1, 0.5, 1); }
+.trend-infographic .bg-purple-500 { transition: width 1.0s cubic-bezier(0.25, 1, 0.5, 1); }
+.trend-infographic .bg-pink-500 { transition: width 1.1s cubic-bezier(0.25, 1, 0.5, 1); }
+.trend-infographic .bg-yellow-500 { transition: width 1.2s cubic-bezier(0.25, 1, 0.5, 1); }
+
+.product-grid-view {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 1024px) {
+    .product-grid-view {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
+/* New list item styling based on image */
+.product-grid-item {
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    transition: box-shadow 0.2s, transform 0.2s;
+    display: flex;
+    align-items: center;
+    text-align: left;
+}
+
+.product-grid-item:hover {
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    transform: translateY(-2px);
+}
+
+.product-thumbnail {
+    position: relative;
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    margin-right: 1rem;
+}
+
+.product-thumbnail img {
+    width: 100%;
+    height: 100%;
+    border-radius: 0.25rem;
+    object-fit: cover;
+}
+
+.image-hover-preview {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translate(1rem, -50%);
+    z-index: 10;
+    width: 200px;
+    height: 200px;
+    pointer-events: none;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.product-thumbnail:hover .image-hover-preview {
+    display: block;
+}
+
+.product-details {
+    flex-grow: 1;
+}
+
+.product-details h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+    line-height: 1.2;
+    min-height: auto;
+}
+
+.specs {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+.product-actions {
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+}
+
+.price {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #111827;
+}
+
+/* AI Icon styles */
+.ai-suggestion-icon-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ff9100;
+    margin-left: 0.5rem;
+}
+
+.ai-suggestion-icon-svg {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.ai-suggestion-icon-wrapper:hover .ai-suggestion-icon-svg {
+    transform: scale(1.1);
+}
+
+
+.add-to-plan-btn {
+    margin-left: auto;
+    flex-shrink: 0;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    border: none;
+    background-color: transparent;
+    color: #3b82f6;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.add-to-plan-btn:hover:not(:disabled) {
+    background-color: #eff6ff;
+}
+
+.add-to-plan-btn.added {
+    color: #10b981;
+    cursor: not-allowed;
+    background-color: transparent;
+}
+
+
+.allocation-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.ai-quantity-suggestion {
+    background-color: #f0f9ff;
+    color: #0369a1;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    border: 1px solid #bae6fd;
 }
 

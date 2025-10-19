@@ -1,259 +1,391 @@
 import { callGeminiAPI } from '../api.js';
-import { showModal, showLoadingInModal } from '../utils.js';
+import { showBalloon, hideBalloon, showToast } from '../utils.js';
 
 // --- DEMO DATA & STATE ---
+
 const products = [
-    { id: 1, name: 'Urban Hiker Boot', price: 85.50, img: 'https://placehold.co/200x200/a3e635/44403c?text=Boot' },
-    { id: 2, name: 'Classic Leather Loafer', price: 62.00, img: 'https://placehold.co/200x200/f87171/44403c?text=Loafer' },
-    { id: 3, name: 'Canvas Slip-On', price: 35.75, img: 'https://placehold.co/200x200/60a5fa/44403c?text=Slip-On' },
-    { id: 4, name: 'Running Sneaker', price: 78.20, img: 'https://placehold.co/200x200/facc15/44403c?text=Sneaker' },
-    { id: 5, name: 'Summer Sandal', price: 29.99, img: 'https://placehold.co/200x200/fb923c/44403c?text=Sandal' },
-    { id: 6, name: 'Winter Snow Boot', price: 110.00, img: 'https://placehold.co/200x200/7dd3fc/44403c?text=Snow+Boot' }
+    { id: 1, name: 'TrekWise Alpine Boot', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Unisex', price: 189.99, img: 'https://placehold.co/200x200/a3e635/44403c?text=Alpine+Boot', aiSuggestion: true },
+    { id: 2, name: 'Velocity Sprint Runner', brand: 'Velocity', style: 'Retro Runners', gender: 'Mens', price: 145.50, img: 'https://placehold.co/200x200/60a5fa/44403c?text=Sprint+Runner', aiSuggestion: true },
+    { id: 3, name: 'Milano Weave Loafer', brand: 'Milano', style: 'Woven Leather', gender: 'Womens', price: 210.00, img: 'https://placehold.co/200x200/f87171/44403c?text=Weave+Loafer', aiSuggestion: true },
+    { id: 4, name: 'SunStep Espadrille', brand: 'SunStep', style: 'Canvas Slip-On', gender: 'Womens', price: 89.99, img: 'https://placehold.co/200x200/fb923c/44403c?text=Espadrille' },
+    { id: 5, name: 'Velocity Charge XT', brand: 'Velocity', style: 'Retro Runners', gender: 'Womens', price: 155.00, img: 'https://placehold.co/200x200/facc15/44403c?text=Charge+XT' },
+    { id: 6, name: 'TrekWise Glacier Boot', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Mens', price: 220.00, img: 'https://placehold.co/200x200/7dd3fc/44403c?text=Glacier+Boot' },
+    { id: 7, name: 'Milano Suede Driver', brand: 'Milano', style: 'Chunky Loafers', gender: 'Mens', price: 195.00, img: 'https://placehold.co/200x200/c4b5fd/44403c?text=Suede+Driver' },
+    { id: 8, name: 'SunStep Beachcomber', brand: 'SunStep', style: 'Sandals', gender: 'Unisex', price: 65.50, img: 'https://placehold.co/200x200/86efac/44403c?text=Beachcomber' },
+    { id: 9, name: 'Velocity Pace Trainer', brand: 'Velocity', style: 'Retro Runners', gender: 'Unisex', price: 130.00, img: 'https://placehold.co/200x200/60a5fa/44403c?text=Pace' },
+    { id: 10, name: 'TrekWise Summit Pro', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Mens', price: 250.00, img: 'https://placehold.co/200x200/a3e635/44403c?text=Summit' },
+    { id: 11, name: 'Milano Classic Pump', brand: 'Milano', style: 'Heels', gender: 'Womens', price: 180.00, img: 'https://placehold.co/200x200/f87171/44403c?text=Pump' },
+    { id: 12, name: 'SunStep Boardwalk Flip', brand: 'SunStep', style: 'Sandals', gender: 'Mens', price: 45.00, img: 'https://placehold.co/200x200/fb923c/44403c?text=Flip' },
+    { id: 13, name: 'Velocity Echo Sneaker', brand: 'Velocity', style: 'Retro Runners', gender: 'Womens', price: 160.00, img: 'https://placehold.co/200x200/facc15/44403c?text=Echo' },
+    { id: 14, name: 'TrekWise Trail Runner', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Womens', price: 175.00, img: 'https://placehold.co/200x200/7dd3fc/44403c?text=Trail' },
+    { id: 15, name: 'Milano Tassel Loafer', brand: 'Milano', style: 'Chunky Loafers', gender: 'Mens', price: 225.00, img: 'https://placehold.co/200x200/c4b5fd/44403c?text=Tassel' },
+    { id: 16, name: 'SunStep Reef Walker', brand: 'SunStep', style: 'Sandals', gender: 'Unisex', price: 75.00, img: 'https://placehold.co/200x200/86efac/44403c?text=Reef' },
+    { id: 17, name: 'Velocity Apex High-Top', brand: 'Velocity', style: 'Retro Runners', gender: 'Unisex', price: 170.00, img: 'https://placehold.co/200x200/60a5fa/44403c?text=Apex', aiSuggestion: true },
+    { id: 18, name: 'TrekWise Canyon Sandal', brand: 'TrekWise', style: 'Sandals', gender: 'Mens', price: 110.00, img: 'https://placehold.co/200x200/a3e635/44403c?text=Canyon' },
+    { id: 19, name: 'Milano Ballet Flat', brand: 'Milano', style: 'Flats', gender: 'Womens', price: 165.00, img: 'https://placehold.co/200x200/f87171/44403c?text=Ballet' },
+    { id: 20, name: 'SunStep Cove Slipper', brand: 'SunStep', style: 'Canvas Slip-On', gender: 'Womens', price: 95.00, img: 'https://placehold.co/200x200/fb923c/44403c?text=Cove' },
+    { id: 21, name: 'Velocity Volt Runner', brand: 'Velocity', style: 'Retro Runners', gender: 'Mens', price: 150.00, img: 'https://placehold.co/200x200/facc15/44403c?text=Volt' },
+    { id: 22, name: 'TrekWise Tundra Boot', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Unisex', price: 235.00, img: 'https://placehold.co/200x200/7dd3fc/44403c?text=Tundra' },
+    { id: 23, name: 'Milano Velvet Loafer', brand: 'Milano', style: 'Chunky Loafers', gender: 'Womens', price: 240.00, img: 'https://placehold.co/200x200/c4b5fd/44403c?text=Velvet', aiSuggestion: true },
+    { id: 24, name: 'SunStep Laguna Slide', brand: 'SunStep', style: 'Sandals', gender: 'Womens', price: 70.00, img: 'https://placehold.co/200x200/86efac/44403c?text=Laguna' },
+    { id: 25, name: 'Aura Flex Trainer', brand: 'Aura', style: 'Performance', gender: 'Womens', price: 135.00, img: 'https://placehold.co/200x200/f9a8d4/44403c?text=Flex' },
+    { id: 26, name: 'Apex Ascent Hiker', brand: 'Apex', style: 'Hiking Boots', gender: 'Mens', price: 195.00, img: 'https://placehold.co/200x200/93c5fd/44403c?text=Ascent' },
+    { id: 27, name: 'Aura Stratus Runner', brand: 'Aura', style: 'Retro Runners', gender: 'Womens', price: 155.00, img: 'https://placehold.co/200x200/f9a8d4/44403c?text=Stratus', aiSuggestion: true },
+    { id: 28, name: 'Apex Urban Commuter', brand: 'Apex', style: 'Canvas Slip-On', gender: 'Unisex', price: 110.00, img: 'https://placehold.co/200x200/93c5fd/44403c?text=Commuter' },
+    { id: 29, name: 'TrekWise Ridgeback', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Mens', price: 210.00, img: 'https://placehold.co/200x200/a3e635/44403c?text=Ridgeback' },
+    { id: 30, name: 'Velocity Nova Trainer', brand: 'Velocity', style: 'Performance', gender: 'Womens', price: 140.00, img: 'https://placehold.co/200x200/60a5fa/44403c?text=Nova' },
+    { id: 31, name: 'Milano Linen Espadrille', brand: 'Milano', style: 'Canvas Slip-On', gender: 'Womens', price: 185.00, img: 'https://placehold.co/200x200/f87171/44403c?text=Linen' },
+    { id: 32, name: 'SunStep Coastline Driver', brand: 'SunStep', style: 'Chunky Loafers', gender: 'Mens', price: 95.00, img: 'https://placehold.co/200x200/fb923c/44403c?text=Coastline' },
+    { id: 33, name: 'Aura Bloom Flat', brand: 'Aura', style: 'Flats', gender: 'Womens', price: 120.00, img: 'https://placehold.co/200x200/f9a8d4/44403c?text=Bloom' },
+    { id: 34, name: 'Apex Terrain Sandal', brand: 'Apex', style: 'Sandals', gender: 'Unisex', price: 130.00, img: 'https://placehold.co/200x200/93c5fd/44403c?text=Terrain' },
+    { id: 35, name: 'TrekWise Sierra Low', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Womens', price: 165.00, img: 'https://placehold.co/200x200/a3e635/44403c?text=Sierra' },
+    { id: 36, name: 'Velocity Comet Racer', brand: 'Velocity', style: 'Retro Runners', gender: 'Mens', price: 160.00, img: 'https://placehold.co/200x200/60a5fa/44403c?text=Comet' },
+    { id: 37, name: 'Milano Stiletto Heel', brand: 'Milano', style: 'Heels', gender: 'Womens', price: 250.00, img: 'https://placehold.co/200x200/f87171/44403c?text=Stiletto' },
+    { id: 38, name: 'SunStep Pier Sandal', brand: 'SunStep', style: 'Sandals', gender: 'Womens', price: 80.00, img: 'https://placehold.co/200x200/fb923c/44403c?text=Pier' },
+    { id: 39, name: 'Aura Zenith Walker', brand: 'Aura', style: 'Performance', gender: 'Unisex', price: 145.00, img: 'https://placehold.co/200x200/f9a8d4/44403c?text=Zenith' },
+    { id: 40, name: 'Apex Trailblazer', brand: 'Apex', style: 'Hiking Boots', gender: 'Unisex', price: 220.00, img: 'https://placehold.co/200x200/93c5fd/44403c?text=Trailblazer', aiSuggestion: true },
+    { id: 41, name: 'Milano Horsebit Loafer', brand: 'Milano', style: 'Chunky Loafers', gender: 'Mens', price: 280.00, img: 'https://placehold.co/200x200/f87171/44403c?text=Horsebit' },
+    { id: 42, name: 'Velocity Phantom', brand: 'Velocity', style: 'Retro Runners', gender: 'Mens', price: 175.00, img: 'https://placehold.co/200x200/60a5fa/44403c?text=Phantom' },
+    { id: 43, name: 'TrekWise Vista Sandal', brand: 'TrekWise', style: 'Sandals', gender: 'Womens', price: 125.00, img: 'https://placehold.co/200x200/a3e635/44403c?text=Vista' },
+    { id: 44, name: 'SunStep Marina Slip-On', brand: 'SunStep', style: 'Canvas Slip-On', gender: 'Unisex', price: 75.00, img: 'https://placehold.co/200x200/fb923c/44403c?text=Marina' },
+    { id: 45, name: 'Aura Solstice Runner', brand: 'Aura', style: 'Performance', gender: 'Womens', price: 160.00, img: 'https://placehold.co/200x200/f9a8d4/44403c?text=Solstice' },
+    { id: 46, name: 'Apex Stealth Boot', brand: 'Apex', style: 'Hiking Boots', gender: 'Mens', price: 240.00, img: 'https://placehold.co/200x200/93c5fd/44403c?text=Stealth' },
+    { id: 47, name: 'Milano Suede Pump', brand: 'Milano', style: 'Heels', gender: 'Womens', price: 220.00, img: 'https://placehold.co/200x200/f87171/44403c?text=Suede+Pump' },
+    { id: 48, name: 'Velocity Core Trainer', brand: 'Velocity', style: 'Performance', gender: 'Unisex', price: 125.00, img: 'https://placehold.co/200x200/60a5fa/44403c?text=Core' },
+    { id: 49, name: 'SunStep Island Loafer', brand: 'SunStep', style: 'Woven Leather', gender: 'Mens', price: 115.00, img: 'https://placehold.co/200x200/fb923c/44403c?text=Island' },
+    { id: 50, name: 'Aura Harmony Flat', brand: 'Aura', style: 'Flats', gender: 'Womens', price: 130.00, img: 'https://placehold.co/200x200/f9a8d4/44403c?text=Harmony', aiSuggestion: true },
+    { id: 51, name: 'Apex Nomad Traveler', brand: 'Apex', style: 'Canvas Slip-On', gender: 'Mens', price: 105.00, img: 'https://placehold.co/200x200/93c5fd/44403c?text=Nomad' },
+    { id: 52, name: 'TrekWise Peak Seeker', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Unisex', price: 260.00, img: 'https://placehold.co/200x200/a3e635/44403c?text=Peak+Seeker' }
 ];
 
-let planningCart = [];
-const budget = 500000;
+const stores = Array.from({ length: 100 }, (_, i) => {
+    const city = ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Edmonton', 'Ottawa', 'Winnipeg', 'Quebec City'][i % 8];
+    return { id: `S${1001 + i}`, name: `${city} Store #${Math.floor(i / 8) + 1}`, city };
+});
 
-// --- RENDER FUNCTIONS ---
+let purchasePlan = [];
+let trendData = null;
+let currentFilters = {
+    brand: 'all',
+    style: 'all',
+    gender: 'all',
+    aiSuggestion: false
+};
 
-function render(container) {
-    loadState();
+async function render(container) {
+    container.innerHTML = `<div class="flex justify-center items-center h-full"><div class="spinner"></div><span class="ml-4">Loading Assortment Planner...</span></div>`;
+    
+    try {
+        const rawTrendData = await callGeminiAPI('GET_ASSORTMENT_TRENDS');
+        trendData = JSON.parse(rawTrendData);
+    } catch (e) {
+        console.error("Failed to parse trend data:", e);
+        container.innerHTML = `<p class="text-red-500">Error loading trend data. Please try again.</p>`;
+        return;
+    }
 
     container.innerHTML = `
-        <div class="space-y-6">
-            <!-- Phase 1: Analysis & Strategy -->
-            <div>
-                <h2 class="text-xl font-bold mb-2">Phase 1: Analysis & Strategy</h2>
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="font-semibold">Seasonal Performance Review</h3>
-                        <div class="flex space-x-2">
-                            <select class="p-2 border rounded-lg bg-gray-50">
-                                <option>Fall/Winter 2024</option>
-                                <option>Spring/Summer 2024</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div class="p-4 bg-blue-50 rounded-lg"><div class="text-gray-500">Total Sales</div><div class="text-2xl font-bold">$1,250,000</div></div>
-                        <div class="p-4 bg-green-50 rounded-lg"><div class="text-gray-500">Gross Margin</div><div class="text-2xl font-bold">48.5%</div></div>
-                        <div class="p-4 bg-yellow-50 rounded-lg"><div class="text-gray-500">Sell-Through %</div><div class="text-2xl font-bold">82%</div></div>
-                    </div>
-                    <div class="mt-4 border-t pt-4">
-                         <h4 class="font-semibold mb-2">AI Trend Insights</h4>
-                         <div id="ai-insights-container" class="text-sm text-gray-600 space-y-2">Click the button to get the latest market trends.</div>
-                         <button id="get-ai-insights-btn" class="mt-2 text-sm bg-indigo-500 text-white py-2 px-4 rounded-lg hover:bg-indigo-600">✨ Get AI Trend Insights</button>
-                    </div>
+        <div class="space-y-8 assortment-planner">
+            <section id="trend-dashboard">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">AI Seasonal Trend Dashboard</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                    ${renderTrendInfographics()}
                 </div>
-            </div>
-
-            <!-- Phase 2: Building the Assortment -->
-            <div>
-                <h2 class="text-xl font-bold mb-2">Phase 2: Building the Assortment</h2>
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <h3 class="font-semibold mb-2">Vendor Marketplace</h3>
-                    <div id="vendor-marketplace" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        ${renderMarketplace()}
-                    </div>
-                </div>
-            </div>
+            </section>
             
-            <!-- Phase 3: Optimization & Finalization -->
-            <div>
-                <h2 class="text-xl font-bold mb-2">Phase 3: Optimization & Finalization</h2>
-                <div class="sticky top-0 bg-white p-4 rounded-lg shadow z-10">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-semibold">Planning Grid & Budget</h3>
-                        <button id="analyze-plan-btn" class="text-sm bg-indigo-500 text-white py-2 px-4 rounded-lg hover:bg-indigo-600">✨ Analyze My Plan</button>
-                    </div>
-                    <div class="mb-2">
-                        <div class="flex justify-between text-sm font-medium text-gray-600">
-                            <span>Total Order Cost: <span id="total-cost">$0</span></span>
-                            <span>Budget: $${budget.toLocaleString()}</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5"><div id="budget-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div></div>
-                    </div>
-                    <div id="planning-grid-container" class="mt-4"></div>
+            <section id="product-catalog">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Product Catalog</h2>
+                    ${renderFilters()}
                 </div>
-            </div>
+                <div id="product-list" class="product-grid-view">
+                    ${filterAndRenderProducts()}
+                </div>
+            </section>
+            
+            <section id="purchase-plan-allocation">
+                <div id="purchase-plan-header">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-bold text-gray-800">Purchase Plan & Store Allocation</h2>
+                        <button id="accept-ai-suggestions-btn" class="text-sm bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled>✨ Accept AI Suggestions</button>
+                    </div>
+                </div>
+                <div id="allocation-table-container">
+                    ${renderAllocationTable()}
+                </div>
+                <div class="mt-6 text-right">
+                    <button id="export-excel-btn" class="flex items-center space-x-2 text-sm bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 ml-auto">
+                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                       <span>Export to Excel</span>
+                    </button>
+                </div>
+            </section>
         </div>
     `;
 
     addEventListeners();
-    renderPlanningGrid(); // Render grid after elements are in DOM
-    updateBudgetTracker();
+    animateInfographics();
 }
 
-function renderMarketplace() {
-    return products.map(p => `
-        <div class="border rounded-lg p-2 text-center shadow-sm">
-            <img src="${p.img}" alt="${p.name}" class="w-full h-auto rounded-md mb-2">
-            <h4 class="text-sm font-medium h-10">${p.name}</h4>
-            <p class="text-xs text-gray-500">$${p.price.toFixed(2)}</p>
-            <button data-product-id="${p.id}" class="add-to-plan-btn mt-2 w-full bg-blue-500 text-white text-sm py-1 rounded-md hover:bg-blue-600">Add</button>
+function renderTrendInfographics() {
+    // ... same as before
+    if (!trendData) return '<p>Trend data not available.</p>';
+    const renderChart = (title, data, color) => `
+        <div class="trend-infographic bg-white p-4 rounded-lg shadow-md flex flex-col justify-between">
+            <h3 class="font-semibold text-gray-600 mb-2">${title}</h3>
+            <div class="space-y-2">
+            ${data.sort((a,b) => b.trendPercentage - a.trendPercentage).slice(0, 3).map(item => `
+                <div class="text-sm">
+                    <div class="flex justify-between font-medium">
+                        <span>${item.name}</span>
+                        <span class="text-${color}-600">+${item.trendPercentage}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-1.5"><div class="bg-${color}-500 h-1.5 rounded-full" style="width: 0%" data-width="${item.trendPercentage * 1.5 > 100 ? 100 : item.trendPercentage * 1.5}%"></div></div>
+                </div>
+            `).join('')}
+            </div>
         </div>
-    `).join('');
-}
-
-function renderPlanningGrid() {
-    const gridContainer = document.getElementById('planning-grid-container');
-    if (!gridContainer) return;
-
-    if (planningCart.length === 0) {
-        gridContainer.innerHTML = `<p class="text-gray-500 text-center py-4">Add items from the marketplace to your plan.</p>`;
-        return;
-    }
-    
-    gridContainer.innerHTML = `
-        <table class="w-full text-sm text-left">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                <tr>
-                    <th class="px-4 py-3">Product</th>
-                    <th class="px-4 py-3">Cost</th>
-                    <th class="px-4 py-3">Units</th>
-                    <th class="px-4 py-3">Total</th>
-                    <th class="px-4 py-3">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${planningCart.map(item => `
-                    <tr class="bg-white border-b">
-                        <td class="px-4 py-4 font-medium">${item.product.name}</td>
-                        <td class="px-4 py-4">$${item.product.price.toFixed(2)}</td>
-                        <td class="px-4 py-4">
-                            <input type="number" value="${item.units}" data-item-id="${item.product.id}" class="plan-units-input w-20 p-1 border rounded-md">
-                        </td>
-                        <td class="px-4 py-4">$${(item.product.price * item.units).toFixed(2)}</td>
-                        <td class="px-4 py-4">
-                            <button data-item-id="${item.product.id}" class="remove-from-plan-btn text-red-500 hover:text-red-700">Remove</button>
-                        </td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
+    `;
+    return `
+        ${renderChart('Brand Momentum', trendData.brands, 'blue')}
+        ${renderChart('Top Styles', trendData.styles, 'green')}
+        ${renderChart('Color Palette', trendData.colors, 'purple')}
+        ${renderChart('Gender Focus', trendData.genders, 'pink')}
+        ${renderChart('Price Point Sweet Spot', trendData.pricePoints, 'yellow')}
+        <div class="trend-infographic bg-white p-4 rounded-lg shadow-md">
+            <h3 class="font-semibold text-gray-600 mb-2">Seasonal Forecast</h3>
+            <div class="text-center">
+                <svg class="w-16 h-16 text-yellow-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <p class="font-bold mt-2">Warm & Dry</p>
+                <p class="text-xs text-gray-500">Focus on breathable materials.</p>
+            </div>
+        </div>
     `;
 }
 
-function updateBudgetTracker() {
-    const totalCost = planningCart.reduce((sum, item) => sum + (item.product.price * item.units), 0);
-    const percentage = Math.min((totalCost / budget) * 100, 100);
-    
-    const totalCostEl = document.getElementById('total-cost');
-    const budgetBarEl = document.getElementById('budget-bar');
+function renderFilters() {
+    const brands = [...new Set(products.map(p => p.brand))];
+    const styles = [...new Set(products.map(p => p.style))];
+    const genders = [...new Set(products.map(p => p.gender))];
 
-    if (totalCostEl) {
-        totalCostEl.textContent = `$${totalCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-    }
-    if (budgetBarEl) {
-        budgetBarEl.style.width = `${percentage}%`;
-        budgetBarEl.classList.toggle('bg-red-600', percentage >= 100);
-        budgetBarEl.classList.toggle('bg-blue-600', percentage < 100);
-    }
+    return `
+        <div id="catalog-filters" class="flex flex-wrap items-center gap-4">
+            <select data-filter="brand" class="filter-select bg-white border border-gray-300 rounded-md py-2 px-3 text-sm">
+                <option value="all">All Brands</option>
+                ${brands.map(b => `<option value="${b}">${b}</option>`).join('')}
+            </select>
+            <select data-filter="style" class="filter-select bg-white border border-gray-300 rounded-md py-2 px-3 text-sm">
+                <option value="all">All Styles</option>
+                ${styles.map(s => `<option value="${s}">${s}</option>`).join('')}
+            </select>
+            <select data-filter="gender" class="filter-select bg-white border border-gray-300 rounded-md py-2 px-3 text-sm">
+                <option value="all">All Genders</option>
+                ${genders.map(g => `<option value="${g}">${g}</option>`).join('')}
+            </select>
+            <label class="flex items-center text-sm cursor-pointer">
+                <input type="checkbox" data-filter="aiSuggestion" class="filter-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                <span class="ml-2 text-gray-700">AI Suggestions Only</span>
+            </label>
+        </div>
+    `;
 }
 
-// --- STATE MANAGEMENT ---
-
-function saveState() {
-    sessionStorage.setItem('planningCart', JSON.stringify(planningCart));
+function filterAndRenderProducts() {
+    const filtered = products.filter(p => {
+        return (currentFilters.brand === 'all' || p.brand === currentFilters.brand) &&
+               (currentFilters.style === 'all' || p.style === currentFilters.style) &&
+               (currentFilters.gender === 'all' || p.gender === currentFilters.gender) &&
+               (!currentFilters.aiSuggestion || p.aiSuggestion);
+    });
+    return filtered.map(p => renderProductGridItem(p)).join('');
 }
 
-function loadState() {
-    try {
-        const savedCart = sessionStorage.getItem('planningCart');
-        planningCart = savedCart ? JSON.parse(savedCart) : [];
-    } catch (e) {
-        console.error("Could not parse planning cart from sessionStorage", e);
-        planningCart = [];
+function renderProductGridItem(product) {
+    const isAdded = purchasePlan.some(p => p.id === product.id);
+    const aiIconSVG = `<div class="ai-suggestion-icon-wrapper">
+        <svg class="ai-suggestion-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2.5C12.41 2.5 12.75 2.84 12.75 3.25V4.75C12.75 5.16 12.41 5.5 12 5.5C11.59 5.5 11.25 5.16 11.25 4.75V3.25C11.25 2.84 11.59 2.5 12 2.5Z" fill="currentColor"/>
+            <path d="M18.04 5.96C18.33 5.67 18.8 5.67 19.09 5.96C19.38 6.25 19.38 6.72 19.09 7.01L17.99 8.11C17.7 8.4 17.23 8.4 16.94 8.11C16.65 7.82 16.65 7.35 16.94 7.06L18.04 5.96Z" fill="currentColor"/>
+            <path d="M5.96 5.96C6.25 5.67 6.72 5.67 7.01 5.96L8.11 7.06C8.4 7.35 8.4 7.82 8.11 8.11C7.82 8.4 7.35 8.4 7.06 8.11L5.96 7.01C5.67 6.72 5.67 6.25 5.96 5.96Z" fill="currentColor"/>
+            <path d="M21.5 12C21.5 11.59 21.16 11.25 20.75 11.25L19.25 11.25C18.84 11.25 18.5 11.59 18.5 12C18.5 12.41 18.84 12.75 19.25 12.75L20.75 12.75C21.16 12.75 21.5 12.41 21.5 12Z" fill="currentColor"/>
+            <path d="M4.75 11.25C5.16 11.25 5.5 11.59 5.5 12C5.5 12.41 5.16 12.75 4.75 12.75L3.25 12.75C2.84 12.75 2.5 12.41 2.5 12C2.5 11.59 2.84 11.25 3.25 11.25L4.75 11.25Z" fill="currentColor"/>
+            <path d="M12 10.5C14.49 10.5 16.5 12.51 16.5 15V17.5C16.5 18.05 16.05 18.5 15.5 18.5H8.5C7.95 18.5 7.5 18.05 7.5 17.5V15C7.5 12.51 9.51 10.5 12 10.5ZM12 9C8.69 9 6 11.69 6 15V17.5C6 18.88 7.12 20 8.5 20H15.5C16.88 20 18 18.88 18 17.5V15C18 11.69 15.31 9 12 9Z" fill="currentColor"/>
+        </svg>
+    </div>`;
+
+     return `
+        <div class="product-grid-item" data-product-id="${product.id}">
+            <div class="product-thumbnail">
+                <img src="${product.img}" alt="${product.name}">
+                <div class="image-hover-preview"><img src="${product.img}" alt="${product.name}"></div>
+            </div>
+            <div class="product-details">
+                <h4>${product.name}</h4>
+                <div class="specs">${product.brand}</div>
+                <div class="product-actions">
+                    <span class="price">$${product.price.toFixed(2)}</span>
+                    ${product.aiSuggestion ? aiIconSVG : ''}
+                </div>
+            </div>
+            <button class="add-to-plan-btn ${isAdded ? 'added' : ''}" ${isAdded ? 'disabled' : ''}>
+                ${isAdded ? '✓ Added' : '+ Add to Plan'}
+            </button>
+        </div>
+    `;
+}
+
+function renderAllocationTable() {
+    if (purchasePlan.length === 0) {
+        return `<p class="text-center text-gray-500 py-8">Add products from the catalog to begin planning.</p>`;
     }
+    const header = purchasePlan.map(p => `<th class="sticky top-0 z-20 px-2 py-3 bg-gray-100 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">${p.name}</th>`).join('');
+    const rows = stores.map(store => `
+        <tr class="hover:bg-gray-50">
+            <td class="sticky left-0 bg-white hover:bg-gray-50 px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-800">${store.name}</td>
+            ${purchasePlan.map(p => `
+                <td class="p-1 text-center">
+                    <div class="allocation-cell">
+                         <span class="ai-quantity-suggestion">AI: ${Math.floor(Math.random() * 20) + 5}</span>
+                        <input type="number" class="w-20 text-center border rounded-md p-1" placeholder="0" data-store-id="${store.id}" data-product-id="${p.id}">
+                    </div>
+                </td>
+            `).join('')}
+        </tr>
+    `).join('');
+    return `
+        <div class="overflow-auto max-h-[600px] border rounded-lg">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="sticky left-0 top-0 z-30 px-4 py-3 bg-gray-100 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Store</th>
+                        ${header}
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">${rows}</tbody>
+            </table>
+        </div>
+    `;
 }
 
-// --- EVENT LISTENERS ---
+function handleAcceptAISuggestionsClick() {
+    const allocationTable = document.getElementById('allocation-table-container');
+    if (!allocationTable) return;
+
+    const inputs = allocationTable.querySelectorAll('input[type="number"]');
+    inputs.forEach(input => {
+        const cell = input.closest('.allocation-cell');
+        const suggestionSpan = cell.querySelector('.ai-quantity-suggestion');
+        if (suggestionSpan) {
+            const suggestionText = suggestionSpan.textContent;
+            const suggestedValue = suggestionText.split(':')[1].trim();
+            if (suggestedValue && !isNaN(suggestedValue)) {
+                input.value = suggestedValue;
+            }
+        }
+    });
+    showToast('All AI suggestions have been applied.');
+}
+
+function handleExportExcelClick() {
+    // This is a dummy function for the demo.
+    // In a real application, this would generate and download an Excel file.
+    showToast('Exporting to Excel... (Demo)');
+}
 
 function addEventListeners() {
-    const marketplace = document.getElementById('vendor-marketplace');
-    const planningGrid = document.getElementById('planning-grid-container');
-    const insightsBtn = document.getElementById('get-ai-insights-btn');
-    const analyzeBtn = document.getElementById('analyze-plan-btn');
+    const mainContainer = document.getElementById('main-content-area');
+    if (!mainContainer) return;
+    
+    mainContainer.addEventListener('click', (e) => {
+        const addBtn = e.target.closest('.add-to-plan-btn');
+        const acceptSugBtn = e.target.closest('#accept-ai-suggestions-btn');
+        const exportBtn = e.target.closest('#export-excel-btn');
+        const aiIcon = e.target.closest('.ai-suggestion-icon-wrapper');
 
-    if (marketplace) {
-        marketplace.addEventListener('click', handleAddToPlan);
-    }
-    if (planningGrid) {
-        planningGrid.addEventListener('click', handleRemoveFromPlan);
-        planningGrid.addEventListener('change', handleUpdatePlanUnits);
-    }
-    if (insightsBtn) {
-        insightsBtn.addEventListener('click', handleGetInsights);
-    }
-    if (analyzeBtn) {
-        analyzeBtn.addEventListener('click', handleAnalyzePlan);
-    }
-}
-
-function handleAddToPlan(e) {
-    if (!e.target.classList.contains('add-to-plan-btn')) return;
-    const productId = parseInt(e.target.dataset.productId, 10);
-    const existingItem = planningCart.find(item => item.product.id === productId);
-
-    if (existingItem) {
-        existingItem.units += 10;
-    } else {
-        const product = products.find(p => p.id === productId);
-        if (product) {
-            planningCart.push({ product, units: 10 });
+        if (addBtn && !addBtn.disabled) {
+            handleProductListClick(addBtn);
+        } else if (acceptSugBtn) {
+            handleAcceptAISuggestionsClick();
+        } else if (exportBtn) {
+            handleExportExcelClick();
+        } else if (aiIcon) {
+            handleAISuggestionClick(aiIcon);
+        } else if (document.getElementById('ai-balloon-container')) {
+            // If clicking anywhere else, and the balloon exists, hide it.
+            const balloon = document.getElementById('ai-balloon-container');
+            if (balloon && !balloon.contains(e.target)) {
+                 hideBalloon();
+            }
         }
-    }
-    
-    saveState();
-    renderPlanningGrid();
-    updateBudgetTracker();
+    });
+
+    mainContainer.addEventListener('change', handleFilterChange);
 }
 
-function handleRemoveFromPlan(e) {
-    if (!e.target.classList.contains('remove-from-plan-btn')) return;
-    const itemId = parseInt(e.target.dataset.itemId, 10);
-    planningCart = planningCart.filter(item => item.product.id !== itemId);
-    
-    saveState();
-    renderPlanningGrid();
-    updateBudgetTracker();
-}
-
-function handleUpdatePlanUnits(e) {
-    if (!e.target.classList.contains('plan-units-input')) return;
-    const itemId = parseInt(e.target.dataset.itemId, 10);
-    const newUnits = parseInt(e.target.value, 10);
-    const item = planningCart.find(i => i.product.id === itemId);
-
-    if (item && newUnits >= 0) {
-        item.units = newUnits;
-        saveState();
-        renderPlanningGrid();
-        updateBudgetTracker();
+function handleFilterChange(e) {
+    const target = e.target;
+    if (target.matches('.filter-select') || target.matches('.filter-checkbox')) {
+        const filterType = target.dataset.filter;
+        const value = target.type === 'checkbox' ? target.checked : target.value;
+        currentFilters[filterType] = value;
+        document.getElementById('product-list').innerHTML = filterAndRenderProducts();
     }
 }
 
-async function handleGetInsights() {
-    const container = document.getElementById('ai-insights-container');
-    if (!container) return;
+
+function handleProductListClick(button) {
+    const itemElement = button.closest('.product-grid-item');
+    const productId = parseInt(itemElement.dataset.productId, 10);
+    const product = products.find(p => p.id === productId);
+    if (product) {
+        purchasePlan.push(product);
+        button.textContent = '✓ Added';
+        button.disabled = true;
+        button.classList.add('added');
+        document.getElementById('allocation-table-container').innerHTML = renderAllocationTable();
+        
+        const acceptBtn = document.getElementById('accept-ai-suggestions-btn');
+        if(acceptBtn) acceptBtn.disabled = false;
+        
+        showToast(`${product.name} added to purchase plan.`);
+    }
+}
+
+async function handleAISuggestionClick(iconWrapper) {
+    // If a balloon is already showing, hide it and do nothing else.
+    if (document.getElementById('ai-balloon-container')) {
+        hideBalloon();
+        return;
+    }
+
+    const itemElement = iconWrapper.closest('.product-grid-item');
+    const productId = parseInt(itemElement.dataset.productId, 10);
+    const product = products.find(p => p.id === productId);
+    const rect = iconWrapper.getBoundingClientRect();
     
-    container.innerHTML = `<div class="flex items-center"><div class="spinner mr-2"></div><span>Getting latest trends...</span></div>`;
-    const response = await callGeminiAPI("GET_TRENDS");
-    container.innerHTML = response;
+    const content = `
+        <div class="p-2">
+            <h4 class="font-bold text-sm mb-2 flex items-center">
+               <span class="mr-2 text-blue-500">
+                   <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.5C12.41 2.5 12.75 2.84 12.75 3.25V4.75C12.75 5.16 12.41 5.5 12 5.5C11.59 5.5 11.25 5.16 11.25 4.75V3.25C11.25 2.84 11.59 2.5 12 2.5Z" fill="currentColor"/><path d="M18.04 5.96C18.33 5.67 18.8 5.67 19.09 5.96C19.38 6.25 19.38 6.72 19.09 7.01L17.99 8.11C17.7 8.4 17.23 8.4 16.94 8.11C16.65 7.82 16.65 7.35 16.94 7.06L18.04 5.96Z" fill="currentColor"/><path d="M5.96 5.96C6.25 5.67 6.72 5.67 7.01 5.96L8.11 7.06C8.4 7.35 8.4 7.82 8.11 8.11C7.82 8.4 7.35 8.4 7.06 8.11L5.96 7.01C5.67 6.72 5.67 6.25 5.96 5.96Z" fill="currentColor"/><path d="M21.5 12C21.5 11.59 21.16 11.25 20.75 11.25L19.25 11.25C18.84 11.25 18.5 11.59 18.5 12C18.5 12.41 18.84 12.75 19.25 12.75L20.75 12.75C21.16 12.75 21.5 12.41 21.5 12Z" fill="currentColor"/><path d="M4.75 11.25C5.16 11.25 5.5 11.59 5.5 12C5.5 12.41 5.16 12.75 4.75 12.75L3.25 12.75C2.84 12.75 2.5 12.41 2.5 12C2.5 11.59 2.84 11.25 3.25 11.25L4.75 11.25Z" fill="currentColor"/><path d="M12 10.5C14.49 10.5 16.5 12.51 16.5 15V17.5C16.5 18.05 16.05 18.5 15.5 18.5H8.5C7.95 18.5 7.5 18.05 7.5 17.5V15C7.5 12.51 9.51 10.5 12 10.5ZM12 9C8.69 9 6 11.69 6 15V17.5C6 18.88 7.12 20 8.5 20H15.5C16.88 20 18 18.88 18 17.5V15C18 11.69 15.31 9 12 9Z" fill="currentColor"/></svg>
+               </span> AI Recommendation</h4>
+            <div id="ai-reasoning-content" class="text-sm space-y-2"><div class="spinner-dots-small"><div></div><div></div><div></div></div> Loading Analysis...</div>
+        </div>`;
+    showBalloon(content, rect, 'right'); 
+
+    const reasoning = await callGeminiAPI('ANALYZE_PRODUCT_SUGGESTION', { productName: product.name });
+    const reasoningEl = document.getElementById('ai-reasoning-content');
+    if (reasoningEl) {
+        reasoningEl.innerHTML = reasoning;
+    }
 }
 
-async function handleAnalyzePlan() {
-    showLoadingInModal("Analyzing Your Plan...");
-    const context = {
-        itemCount: planningCart.length,
-        hasBoots: planningCart.some(i => i.product.name.includes('Boot')),
-        hasSandals: planningCart.some(i => i.product.name.includes('Sandal'))
-    };
-    const response = await callGeminiAPI("ANALYZE_PLAN", context);
-    showModal("AI Plan Analysis", response);
-}
 
-// --- EXPORT ---
+function animateInfographics() {
+    document.querySelectorAll('[data-width]').forEach(bar => {
+        setTimeout(() => { bar.style.width = bar.dataset.width; }, 100);
+    });
+}
 
 export { render as init };
 

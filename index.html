@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - SoftMoc Platform</title>
+    <title>Login - SoftMoc Unified Commerce Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -17,38 +17,45 @@
             border-radius: 0.75rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             width: 100%;
-            max-width: 24rem; /* 384px */
+            max-width: 26rem; /* 416px */
+            transition: all 0.3s ease-in-out;
+        }
+        .input-focus:focus {
+            box-shadow: 0 0 0 2px #3b82f6;
+            border-color: #3b82f6;
         }
     </style>
 </head>
-<body class="flex items-center justify-center h-screen bg-gray-100">
+<body class="flex items-center justify-center h-screen bg-gray-100 px-4">
 
     <div class="login-container">
         <div class="text-center mb-8">
+             <img src="https://placehold.co/100x40/000000/FFFFFF?text=SoftMoc" alt="SoftMoc Logo" class="mx-auto mb-4">
             <h1 class="text-3xl font-bold text-gray-900">Welcome Back</h1>
-            <p class="text-gray-500 mt-2">Sign in to the SoftMoc Platform</p>
+            <p class="text-gray-500 mt-2">Sign in to the Unified Commerce Platform</p>
         </div>
 
         <form id="login-form" class="space-y-6">
             <div>
                 <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
-                <input type="text" id="username" name="username" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Enter any username">
+                <input type="text" id="username" name="username" value="manager@softmoc.com" required class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none input-focus transition">
             </div>
             <div>
                 <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                <input type="password" id="password" name="password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Enter any password">
+                <input type="password" id="password" name="password" value="demopass" required class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none input-focus transition">
             </div>
-            
+
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
                     <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                     <label for="remember-me" class="ml-2 block text-sm text-gray-900"> Remember me </label>
                 </div>
-
                 <div class="text-sm">
                     <a href="#" class="font-medium text-blue-600 hover:text-blue-500"> Forgot your password? </a>
                 </div>
             </div>
+
+            <div id="error-message" class="hidden text-sm text-red-600 bg-red-100 p-3 rounded-md"></div>
 
             <div>
                 <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
@@ -57,15 +64,25 @@
             </div>
         </form>
          <p class="text-center text-xs text-gray-500 mt-8">
-            This is a demo. Any username and password will work.
+            This is a demo. Use the pre-filled credentials or any username.
         </p>
     </div>
 
     <script>
         document.getElementById('login-form').addEventListener('submit', function(event) {
             event.preventDefault();
-            // Get the username or use a default value
-            const username = document.getElementById('username').value || 'Demo User';
+            const usernameInput = document.getElementById('username');
+            const errorMessage = document.getElementById('error-message');
+
+            const username = usernameInput.value.trim();
+
+            if (!username) {
+                errorMessage.textContent = 'Please enter a username.';
+                errorMessage.classList.remove('hidden');
+                usernameInput.focus();
+                return;
+            }
+
             // Save the user to session storage BEFORE redirecting
             sessionStorage.setItem('loggedInUser', username);
             // Redirect to the dashboard
@@ -75,4 +92,3 @@
 
 </body>
 </html>
-

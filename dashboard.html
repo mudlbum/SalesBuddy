@@ -27,6 +27,10 @@
                 <h1 id="module-title" class="text-2xl font-semibold text-gray-700">Loading...</h1>
                 <div class="flex items-center space-x-4">
                     <input type="text" placeholder="Search..." class="px-4 py-2 w-64 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="upload-file-btn" class="flex items-center space-x-2 text-sm bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <span>Upload</span>
+                    </button>
                     <div class="relative">
                         <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                     </div>
@@ -41,17 +45,9 @@
         </main>
     </div>
 
-    <!-- AI Response Modal -->
-    <div id="ai-modal" class="modal">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="modal-title" class="text-lg font-semibold">AI Assistant</h3>
-                <button id="modal-close-btn" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
-            </div>
-            <div id="modal-body">
-                <!-- Content will be injected here -->
-            </div>
-        </div>
+    <!-- AI Balloon Container -->
+    <div id="ai-balloon-container">
+        <div id="ai-balloon-content"></div>
     </div>
     
     <!-- Floating Chat Widget -->
