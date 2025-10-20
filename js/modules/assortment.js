@@ -77,7 +77,7 @@ async function render(container) {
     
     try {
         const rawTrendData = await callGeminiAPI('GET_ASSORTMENT_TRENDS');
-        // FIXED: Re-added the JSON cleaning line. This was a critical bug.
+        // FIXED: Clean the response to remove markdown backticks
         const cleanedTrendData = rawTrendData.replace(/```json\n?|```/g, '');
         trendData = JSON.parse(cleanedTrendData);
     } catch (e) {
@@ -291,9 +291,35 @@ function handleAcceptAISuggestionsClick() {
 }
 
 function handleExportExcelClick() {
-    // This is a dummy function for the demo.
-    // In a real application, this would generate and download an Excel file.
-    showToast('Exporting to Excel... (Demo)');
+    if (purchasePlan.length === 0) {
+        showToast('Your purchase plan is empty.');
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    const allocationTable = document.getElementById('allocation-table-container');
+    const headers = ['Store', ...purchasePlan.map(p => `"${p.name}"`)];
+    csvContent += headers.join(',') + '\r\n';
+
+    const inputs = Array.from(allocationTable.querySelectorAll('input[type="number"]'));
+
+    stores.slice(0, 10).forEach(store => {
+        const row = [`"${store.name}"`];
+        purchasePlan.forEach(product => {
+            const input = inputs.find(i => i.dataset.storeId === store.id && i.dataset.productId == product.id);
+            row.push(input && input.value ? input.value : '0');
+        });
+        csvContent += row.join(',') + '\r\n';
+    });
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "purchase_plan_export.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Purchase plan has been exported.');
 }
 
 // --- FIXED: Event listeners split into click, mouseover, mouseout ---
@@ -308,7 +334,7 @@ function addEventListeners() {
         const exportBtn = e.target.closest('#export-excel-btn');
         const seeMoreBtn = e.target.closest('.see-more-trends-btn');
 
-        if (addBtn) {
+        if (addBtn) { // No longer check for 'disabled'
             handleProductListClick(addBtn);
         } else if (acceptSugBtn) {
             handleAcceptAISuggestionsClick();
@@ -433,6 +459,14 @@ async function handleAISuggestionHover(iconWrapper) {
     }
 }
 
+function updateActionButtonsState() {
+    const acceptBtn = document.getElementById('accept-ai-suggestions-btn');
+    const exportBtn = document.getElementById('export-excel-btn');
+    const hasItems = purchasePlan.length > 0;
+    
+    if (acceptBtn) acceptBtn.disabled = !hasItems;
+    if (exportBtn) exportBtn.disabled = !hasItems;
+}
 
 function animateInfographics() {
     document.querySelectorAll('[data-width]').forEach(bar => {

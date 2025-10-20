@@ -4,6 +4,7 @@ import * as Accounting from './modules/accounting.js';
 import * as Logistics from './modules/logistics.js';
 import * as HR from './modules/hr.js';
 import * as Operations from './modules/operations.js';
+import { showModal, hideModal, showToast } from './utils.js';
 
 // --- DOM ELEMENTS CACHE ---
 const mainContentArea = document.getElementById('main-content-area');
@@ -20,9 +21,9 @@ const accountMenuMainView = document.getElementById('account-menu-main-view');
 const accountMenuSettingsView = document.getElementById('account-menu-settings-view');
 const moduleSettingsContainer = document.getElementById('module-settings-container');
 const logoutBtn = document.getElementById('logout-btn');
+const uploadBtn = document.getElementById('upload-file-btn');
 
 // --- MODULE DEFINITIONS ---
-// Defines the modules available in the application, their properties, and associated JS module.
 const modules = [
     { id: 'assortment-planning', title: 'Assortment Planning', icon: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>`, module: Assortment },
     { id: 'accounting', title: 'Accounting', icon: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>`, module: Accounting },
@@ -98,20 +99,16 @@ function renderSidebar() {
         </button>
     `).join('');
     
-    // After re-rendering, check if the current hash is for a module that is now hidden.
     const currentModuleId = window.location.hash.substring(1);
     const isCurrentModuleVisible = visibleModules.some(m => m.id === currentModuleId);
 
     if (currentModuleId && !isCurrentModuleVisible && visibleModules.length > 0) {
-        // If current module is hidden, navigate to the first available one.
         window.location.hash = visibleModules[0].id;
     } else if (visibleModules.length === 0) {
-        // Handle the case where no modules are active
         mainContentArea.innerHTML = `<div class="text-center p-8 text-gray-600">No modules are active. You can enable them in the account settings menu.</div>`;
         moduleTitle.textContent = "No Active Modules";
         document.querySelectorAll('.sidebar-icon').forEach(icon => icon.classList.remove('active'));
     } else {
-         // Re-apply active class to the current module icon
         document.querySelectorAll('.sidebar-icon').forEach(icon => {
             icon.classList.toggle('active', icon.dataset.moduleId === currentModuleId);
         });
@@ -128,10 +125,9 @@ async function loadModule(moduleId) {
     if (!moduleId || !settings[moduleId]) {
          const visibleModules = modules.filter(m => settings[m.id]);
          if (visibleModules.length > 0) {
-             // If no module is selected or the selected one is disabled, load the first visible one
              window.location.hash = visibleModules[0].id;
          }
-         return; // Stop if no modules are visible
+         return;
     }
 
     const selectedModule = modules.find(m => m.id === moduleId);
@@ -141,7 +137,6 @@ async function loadModule(moduleId) {
         return;
     }
 
-    // Update UI elements to reflect the current module
     moduleTitle.textContent = selectedModule.title;
     document.querySelectorAll('.sidebar-icon').forEach(icon => {
         icon.classList.toggle('active', icon.dataset.moduleId === moduleId);
@@ -166,8 +161,7 @@ async function loadModule(moduleId) {
 function handleSidebarClick(e) {
     const iconButton = e.target.closest('.sidebar-icon');
     if (iconButton) {
-        const moduleId = iconButton.dataset.moduleId;
-        window.location.hash = moduleId;
+        window.location.hash = iconButton.dataset.moduleId;
     }
 }
 
@@ -179,7 +173,6 @@ function handleHashChange() {
     const visibleModules = modules.filter(m => settings[m.id]);
     let moduleId = window.location.hash.substring(1);
 
-    // If no hash, or hash is for a disabled module, default to first visible module
     if (!moduleId || !settings[moduleId]) {
         moduleId = visibleModules.length > 0 ? visibleModules[0].id : null;
     }
@@ -187,8 +180,7 @@ function handleHashChange() {
     if (moduleId) {
         loadModule(moduleId);
     } else {
-        // No visible modules to load
-        renderSidebar(); // This will show the empty state
+        renderSidebar();
     }
 }
 
@@ -210,7 +202,6 @@ function initializeUser() {
             menuUsername.textContent = user;
         }
     } else if (userProfilePicture) {
-        // Fallback if no user is found
         userProfilePicture.src = "https://placehold.co/100x100/3B82F6/FFFFFF?text=SM";
         if(menuUsername) {
             menuUsername.textContent = "manager@softmoc.com";
@@ -223,11 +214,92 @@ function initializeUser() {
  */
 function toggleAccountMenu() {
     const isHidden = accountMenu.classList.toggle('hidden');
-    // Always reset to main view when opening/closing
     if (!isHidden) {
         accountMenuMainView.classList.remove('hidden');
         accountMenuSettingsView.classList.add('hidden');
     }
+}
+
+/**
+ * Shows the file upload modal and handles its interactions.
+ */
+function showUploadModal() {
+    const modalContent = `
+        <div id="upload-drop-zone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 hover:bg-gray-50 transition-colors">
+            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <p class="mt-2 text-sm text-gray-600">Drag & drop files here, or</p>
+            <button id="modal-select-files-btn" class="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-500">select files</button>
+            <p class="text-xs text-gray-500 mt-1">PNG, JPG, CSV, XLS up to 10MB</p>
+            <div id="file-list" class="mt-4 text-left text-sm"></div>
+        </div>
+        <div class="mt-4 text-right">
+             <button id="modal-upload-confirm-btn" class="bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700 disabled:opacity-50" disabled>Upload</button>
+        </div>
+    `;
+    showModal('Upload Files', modalContent);
+
+    // Add event listeners for modal content
+    const dropZone = document.getElementById('upload-drop-zone');
+    const selectFilesBtn = document.getElementById('modal-select-files-btn');
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.multiple = true;
+    fileInput.style.display = 'none';
+    
+    let selectedFiles = [];
+
+    const updateFileList = () => {
+        const fileListContainer = document.getElementById('file-list');
+        const uploadConfirmBtn = document.getElementById('modal-upload-confirm-btn');
+        if (!fileListContainer || !uploadConfirmBtn) return;
+
+        if (selectedFiles.length > 0) {
+            fileListContainer.innerHTML = '<strong>Selected files:</strong><ul>' + 
+                selectedFiles.map(f => `<li class="truncate p-1">${f.name} (${(f.size/1024).toFixed(1)} KB)</li>`).join('') + 
+                '</ul>';
+            uploadConfirmBtn.disabled = false;
+        } else {
+            fileListContainer.innerHTML = '';
+            uploadConfirmBtn.disabled = true;
+        }
+    };
+    
+    selectFilesBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+        selectedFiles = Array.from(fileInput.files);
+        updateFileList();
+    });
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, e => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('bg-blue-50', 'border-blue-500'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('bg-blue-50', 'border-blue-500'), false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        selectedFiles = Array.from(e.dataTransfer.files);
+        updateFileList();
+    }, false);
+    
+    document.getElementById('modal-upload-confirm-btn').addEventListener('click', () => {
+        // Dummy upload simulation
+        showToast(`Uploading ${selectedFiles.length} file(s)...`);
+        setTimeout(() => {
+            showToast('Upload successful!');
+            hideModal();
+        }, 1500);
+    });
+
+    dropZone.appendChild(fileInput);
 }
 
 
@@ -244,59 +316,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- EVENT LISTENERS ---
     sidebarIcons.addEventListener('click', handleSidebarClick);
     window.addEventListener('hashchange', handleHashChange);
+    uploadBtn.addEventListener('click', showUploadModal);
     
     // Account Menu Listeners
-    if (accountMenuButton) {
-        accountMenuButton.addEventListener('click', (e) => {
-            e.stopPropagation(); // prevent document click listener from firing immediately
-            toggleAccountMenu();
-        });
-    }
+    accountMenuButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleAccountMenu();
+    });
 
     document.addEventListener('click', (e) => {
-        if (accountMenuContainer && !accountMenuContainer.contains(e.target) && !accountMenu.classList.contains('hidden')) {
+        if (!accountMenuContainer.contains(e.target) && !accountMenu.classList.contains('hidden')) {
             toggleAccountMenu();
         }
     });
 
-    if (settingsMenuBtn) {
-        settingsMenuBtn.addEventListener('click', () => {
-            accountMenuMainView.classList.add('hidden');
-            accountMenuSettingsView.classList.remove('hidden');
-            renderModuleSettings();
-        });
-    }
+    settingsMenuBtn.addEventListener('click', () => {
+        accountMenuMainView.classList.add('hidden');
+        accountMenuSettingsView.classList.remove('hidden');
+        renderModuleSettings();
+    });
 
-    if (settingsBackBtn) {
-        settingsBackBtn.addEventListener('click', () => {
-            accountMenuSettingsView.classList.add('hidden');
-            accountMenuMainView.classList.remove('hidden');
-        });
-    }
+    settingsBackBtn.addEventListener('click', () => {
+        accountMenuSettingsView.classList.add('hidden');
+        accountMenuMainView.classList.remove('hidden');
+    });
 
-    if (moduleSettingsContainer) {
-        moduleSettingsContainer.addEventListener('change', (e) => {
-            if (e.target.matches('input[type="checkbox"]')) {
-                const moduleId = e.target.dataset.moduleId;
-                const isEnabled = e.target.checked;
-                const settings = loadModuleSettings();
-                settings[moduleId] = isEnabled;
-                saveModuleSettings(settings);
-                renderSidebar();
-                handleHashChange(); // Re-evaluate current module
-            }
-        });
-    }
+    moduleSettingsContainer.addEventListener('change', (e) => {
+        if (e.target.matches('input[type="checkbox"]')) {
+            const moduleId = e.target.dataset.moduleId;
+            const isEnabled = e.target.checked;
+            const settings = loadModuleSettings();
+            settings[moduleId] = isEnabled;
+            saveModuleSettings(settings);
+            renderSidebar();
+            handleHashChange();
+        }
+    });
 
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            sessionStorage.removeItem('loggedInUser');
-            localStorage.removeItem('moduleSettings'); // Clear settings on logout
-            window.location.href = 'index.html';
-        });
-    }
+    logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        sessionStorage.removeItem('loggedInUser');
+        localStorage.removeItem('moduleSettings');
+        window.location.href = 'index.html';
+    });
     
     handleHashChange();
     Communications.init();
 });
+

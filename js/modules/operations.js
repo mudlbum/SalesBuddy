@@ -1,3 +1,5 @@
+import { showModal } from '../utils.js';
+
 function render(container) {
     container.innerHTML = `
         <div class="space-y-6">
@@ -36,7 +38,7 @@ function render(container) {
                  <div class="bg-white p-4 rounded-lg shadow">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-semibold">Maintenance Log</h3>
-                        <button class="text-sm bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600">Report New Issue</button>
+                        <button id="report-issue-btn" class="text-sm bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600">Report New Issue</button>
                     </div>
                     <table class="w-full text-sm text-left">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
@@ -70,6 +72,43 @@ function render(container) {
             </div>
         </div>
     `;
+    addOperationsEventListeners();
+}
+
+function addOperationsEventListeners() {
+    document.getElementById('report-issue-btn')?.addEventListener('click', showReportIssueModal);
+}
+
+function showReportIssueModal() {
+    const modalBody = `
+        <form id="report-issue-form" class="space-y-4">
+            <div>
+                <label for="issue-title" class="block text-sm font-medium text-gray-700">Issue Title</label>
+                <input type="text" id="issue-title" name="issue-title" placeholder="e.g., POS terminal 2 not responding" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="issue-location" class="block text-sm font-medium text-gray-700">Location</label>
+                <input type="text" id="issue-location" name="issue-location" placeholder="e.g., Front cash desk" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+            </div>
+             <div>
+                <label for="issue-urgency" class="block text-sm font-medium text-gray-700">Urgency</label>
+                <select id="issue-urgency" name="issue-urgency" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <option>Low</option>
+                    <option>Medium</option>
+                    <option>High</option>
+                    <option>Critical</option>
+                </select>
+            </div>
+            <div>
+                <label for="issue-description" class="block text-sm font-medium text-gray-700">Description</label>
+                <textarea id="issue-description" name="issue-description" rows="4" class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></textarea>
+            </div>
+             <div class="text-right">
+                <button type="submit" class="bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700">Submit Ticket</button>
+            </div>
+        </form>
+    `;
+    showModal('Report Maintenance Issue', modalBody);
 }
 
 export { render as init };

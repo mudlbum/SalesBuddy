@@ -1,5 +1,58 @@
+// --- MODAL ---
+const modalContainer = document.getElementById('modal-container');
+
+/**
+ * Shows a modal with the specified title and content.
+ * @param {string} title - The title to display in the modal header.
+ * @param {string} contentHTML - The HTML content to display in the modal body.
+ * @param {boolean} [isLarge=false] - If true, the modal will have a larger max-width.
+ */
+function showModal(title, contentHTML, isLarge = false) {
+    if (!modalContainer) return;
+
+    modalContainer.innerHTML = `
+        <div class="modal-content ${isLarge ? 'max-w-4xl' : 'max-w-lg'} w-full">
+            <div class="modal-header">
+                <h2 class="modal-title">${title}</h2>
+                <button class="modal-close-btn" id="modal-close-btn">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                ${contentHTML}
+            </div>
+        </div>
+    `;
+
+    // Add visible class to trigger transition
+    requestAnimationFrame(() => {
+        modalContainer.classList.add('visible');
+    });
+
+    // Add event listeners
+    modalContainer.querySelector('#modal-close-btn').addEventListener('click', hideModal);
+    modalContainer.addEventListener('click', (e) => {
+        // Close if clicking on the overlay itself, not the content
+        if (e.target === modalContainer) {
+            hideModal();
+        }
+    });
+}
+
+/**
+ * Hides the currently visible modal.
+ */
+function hideModal() {
+    if (!modalContainer) return;
+    modalContainer.classList.remove('visible');
+    // Clear content after transition to prevent flashes of old content
+    setTimeout(() => {
+        modalContainer.innerHTML = '';
+    }, 300); // Should match CSS transition duration
+}
+
+
 // --- AI SUGGESTION BALLOON ---
-// FIXED: ID now matches 'dashboard.html'
 const balloonContainer = document.getElementById('ai-balloon-container'); 
 let hideBalloonTimeout;
 
@@ -16,11 +69,16 @@ function showBalloon(content, targetRect) {
         clearTimeout(hideBalloonTimeout);
     }
 
-    balloonContainer.innerHTML = content;
-    balloonContainer.style.display = 'block';
+    const balloonContent = document.createElement('div');
+    balloonContent.id = 'ai-balloon-content';
+    balloonContent.innerHTML = content;
 
+    // Clear previous content and add new
+    balloonContainer.innerHTML = '';
+    balloonContainer.appendChild(balloonContent);
+    
     // Position the balloon.
-    const top = targetRect.top + window.scrollY - 10; // 10px offset
+    const top = targetRect.top + window.scrollY - 10;
     const left = targetRect.left + window.scrollX + (targetRect.width / 2);
     
     balloonContainer.style.top = `${top}px`;
@@ -31,10 +89,9 @@ function showBalloon(content, targetRect) {
         hideBalloon();
     };
     
-    // Animate it in
-    requestAnimationFrame(() => {
-        balloonContainer.classList.add('visible');
-    });
+    // Make it visible
+    balloonContainer.style.opacity = '1';
+    balloonContainer.style.pointerEvents = 'auto';
 
     // Set a timeout to hide after a delay
     hideBalloonTimeout = setTimeout(hideBalloon, 5000); // 5 seconds
@@ -45,13 +102,9 @@ function showBalloon(content, targetRect) {
  */
 function hideBalloon() {
     if (!balloonContainer) return;
-
-    // If already hidden, do nothing
-    if (!balloonContainer.classList.contains('visible')) {
-        return;
-    }
     
-    balloonContainer.classList.remove('visible');
+    balloonContainer.style.opacity = '0';
+    balloonContainer.style.pointerEvents = 'none';
     balloonContainer.onmouseleave = null; // Clean up listener
 
     if (hideBalloonTimeout) {
@@ -92,4 +145,4 @@ function showToast(message) {
 }
 
 
-export { showToast, showBalloon, hideBalloon };
+export { showToast, showBalloon, hideBalloon, showModal, hideModal };

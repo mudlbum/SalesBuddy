@@ -1,5 +1,7 @@
+import { showModal, showToast } from '../utils.js';
+
 /**
- * Renders the Accounting module with enhanced features for a realistic demo.
+ * Renders the Accounting module with interactive modals and actions.
  */
 function render(container) {
     container.innerHTML = `
@@ -44,7 +46,7 @@ function render(container) {
                         <h3 class="font-semibold">Accounts Receivable</h3>
                         <p class="text-xs text-gray-500">Aging Summary: 0-30: $15,250 | 31-60: $0 | 60+: $25,310</p>
                     </div>
-                    <button class="text-sm bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600">Create New Invoice</button>
+                    <button id="create-invoice-btn" class="text-sm bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600">Create New Invoice</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
@@ -65,7 +67,7 @@ function render(container) {
                                 <td class="px-4 py-3">11/14/2025</td>
                                 <td class="px-4 py-3 text-right">$15,250.00</td>
                                 <td class="px-4 py-3 text-center"><span class="px-2 py-1 text-xs rounded-full bg-blue-200 text-blue-800">Sent</span></td>
-                                <td class="px-4 py-3 text-center"><button class="text-xs text-blue-600 hover:underline">Send Reminder</button></td>
+                                <td class="px-4 py-3 text-center"><button class="text-xs text-blue-600 hover:underline action-btn" data-action="send-reminder" data-invoice="INV-2025-015">Send Reminder</button></td>
                             </tr>
                              <tr class="bg-white border-b hover:bg-gray-50">
                                 <td class="px-4 py-3 font-medium">INV-2025-014</td>
@@ -81,7 +83,7 @@ function render(container) {
                                 <td class="px-4 py-3">10/01/2025</td>
                                 <td class="px-4 py-3 text-right">$25,310.00</td>
                                 <td class="px-4 py-3 text-center"><span class="px-2 py-1 text-xs rounded-full bg-red-200 text-red-800">17 Days Overdue</span></td>
-                                <td class="px-4 py-3 text-center"><button class="text-xs text-red-600 hover:underline font-semibold">Start Collection</button></td>
+                                <td class="px-4 py-3 text-center"><button class="text-xs text-red-600 hover:underline font-semibold action-btn" data-action="start-collection" data-invoice="INV-2025-012">Start Collection</button></td>
                             </tr>
                         </tbody>
                     </table>
@@ -93,7 +95,7 @@ function render(container) {
                  <div class="bg-white p-4 rounded-lg shadow">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-semibold">Expense Reports</h3>
-                        <button class="text-sm bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300">Submit Expense</button>
+                        <button id="submit-expense-btn" class="text-sm bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300">Submit Expense</button>
                     </div>
                     <div class="space-y-3">
                         <div class="p-3 border rounded-lg hover:bg-gray-50">
@@ -112,14 +114,17 @@ function render(container) {
                         <p class="text-gray-500">Next Payroll Run:</p>
                         <p class="text-3xl font-bold">October 31, 2025</p>
                         <p class="text-gray-500 mt-1">Total Estimated Payroll: ~$12,500.00</p>
-                        <button class="mt-4 text-sm bg-green-500 text-white py-2 px-6 rounded-lg hover:bg-green-600">Review & Approve</button>
+                        <button id="review-payroll-btn" class="mt-4 text-sm bg-green-500 text-white py-2 px-6 rounded-lg hover:bg-green-600">Review & Approve</button>
                     </div>
                 </div>
             </div>
         </div>
     `;
+    
+    // Attach event listeners after rendering the content
+    addAccountingEventListeners();
 
-    // Initialize Chart.js with a combo bar/line chart
+    // Initialize Chart.js
     const ctx = document.getElementById('financialChart').getContext('2d');
     new Chart(ctx, {
         type: 'bar',
@@ -155,23 +160,121 @@ function render(container) {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: {
-                    beginAtZero: true,
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    ticks: { callback: value => '$' + value / 1000 + 'K' }
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    grid: { drawOnChartArea: false },
-                    ticks: { callback: value => value + '%' }
-                }
+                y: { beginAtZero: true, type: 'linear', display: true, position: 'left', ticks: { callback: value => '$' + value / 1000 + 'K' } },
+                y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: value => value + '%' } }
             }
         }
     });
+}
+
+function addAccountingEventListeners() {
+    document.getElementById('create-invoice-btn')?.addEventListener('click', showCreateInvoiceModal);
+    document.getElementById('submit-expense-btn')?.addEventListener('click', showSubmitExpenseModal);
+    document.getElementById('review-payroll-btn')?.addEventListener('click', showReviewPayrollModal);
+    
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const action = e.target.dataset.action;
+            const invoice = e.target.dataset.invoice;
+            if (action === 'send-reminder') {
+                showToast(`Reminder sent for invoice ${invoice}.`);
+            } else if (action === 'start-collection') {
+                showToast(`Collections process started for invoice ${invoice}.`);
+            }
+        });
+    });
+}
+
+function showCreateInvoiceModal() {
+    const modalBody = `
+        <form id="new-invoice-form" class="space-y-4">
+            <div>
+                <label for="customer" class="block text-sm font-medium text-gray-700">Customer</label>
+                <select id="customer" name="customer" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <option>Store 5 (Toronto)</option>
+                    <option>Store 2 (Vancouver)</option>
+                    <option>Store 8 (Calgary)</option>
+                </select>
+            </div>
+            <div>
+                <label for="invoice-date" class="block text-sm font-medium text-gray-700">Invoice Date</label>
+                <input type="date" id="invoice-date" name="invoice-date" value="${new Date().toISOString().slice(0, 10)}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+            </div>
+             <div>
+                <label for="due-date" class="block text-sm font-medium text-gray-700">Due Date</label>
+                <input type="date" id="due-date" name="due-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="amount" class="block text-sm font-medium text-gray-700">Amount</label>
+                <input type="number" id="amount" name="amount" placeholder="0.00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+            </div>
+             <div class="text-right">
+                <button type="submit" class="bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700">Create Invoice</button>
+            </div>
+        </form>
+    `;
+    showModal('Create New Invoice', modalBody);
+}
+
+function showSubmitExpenseModal() {
+    const modalBody = `
+        <form id="submit-expense-form" class="space-y-4">
+             <div>
+                <label for="expense-category" class="block text-sm font-medium text-gray-700">Category</label>
+                <select id="expense-category" name="expense-category" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <option>Travel</option>
+                    <option>Office Supplies</option>
+                    <option>Meals & Entertainment</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            <div>
+                <label for="expense-amount" class="block text-sm font-medium text-gray-700">Amount</label>
+                <input type="number" id="expense-amount" name="expense-amount" placeholder="0.00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="expense-description" class="block text-sm font-medium text-gray-700">Description</label>
+                <textarea id="expense-description" name="expense-description" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></textarea>
+            </div>
+             <div class="text-right">
+                <button type="submit" class="bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700">Submit for Approval</button>
+            </div>
+        </form>
+    `;
+    showModal('Submit Expense Report', modalBody);
+}
+
+function showReviewPayrollModal() {
+    const modalBody = `
+        <div class="space-y-4">
+            <div>
+                <h4 class="font-semibold">Pay Period: Oct 16 - Oct 31, 2025</h4>
+                <p class="text-sm text-gray-600">Total Payroll Cost: <span class="font-bold">$12,580.45</span></p>
+            </div>
+            <div class="overflow-x-auto border rounded-lg max-h-80">
+                <table class="w-full text-sm text-left">
+                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3">Employee</th>
+                            <th class="px-4 py-3 text-right">Hours</th>
+                            <th class="px-4 py-3 text-right">Gross Pay</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        <tr><td class="px-4 py-2 font-medium">Jane Doe</td><td class="px-4 py-2 text-right">80.00</td><td class="px-4 py-2 text-right">$2,400.00</td></tr>
+                        <tr><td class="px-4 py-2 font-medium">John Smith</td><td class="px-4 py-2 text-right">75.50</td><td class="px-4 py-2 text-right">$1,887.50</td></tr>
+                        <tr><td class="px-4 py-2 font-medium">Alice Brown</td><td class="px-4 py-2 text-right">82.25</td><td class="px-4 py-2 text-right">$1,747.81</td></tr>
+                        <!-- ... more employees ... -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-right pt-2 space-x-2">
+                 <button class="bg-gray-200 text-gray-800 py-2 px-5 rounded-lg hover:bg-gray-300">Request Changes</button>
+                 <button class="bg-green-600 text-white py-2 px-5 rounded-lg hover:bg-green-700">Approve Payroll</button>
+            </div>
+        </div>
+    `;
+    showModal('Review & Approve Payroll', modalBody);
 }
 
 export { render as init };

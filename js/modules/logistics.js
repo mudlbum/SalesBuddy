@@ -1,3 +1,5 @@
+import { showModal, showToast } from '../utils.js';
+
 function render(container) {
     container.innerHTML = `
         <div class="space-y-8">
@@ -30,7 +32,7 @@ function render(container) {
                     <h3 class="font-semibold">Warehouse Inventory</h3>
                     <div>
                         <input type="text" placeholder="Search by SKU or Product..." class="text-sm px-3 py-1 border rounded-lg">
-                        <button class="ml-2 text-sm bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300">Log Adjustment</button>
+                        <button id="log-adjustment-btn" class="ml-2 text-sm bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300">Log Adjustment</button>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -172,8 +174,8 @@ function render(container) {
                             <td class="px-4 py-3">Store 8 (Calgary)</td>
                             <td class="px-4 py-3">7</td>
                             <td class="px-4 py-3">
-                                <button class="text-xs bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600">Compare Rates</button>
-                                <button class="ml-2 text-xs bg-gray-200 py-1 px-3 rounded hover:bg-gray-300">Print Packing Slip</button>
+                                <button class="action-btn text-xs bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600" data-action="compare-rates" data-order="#89339">Compare Rates</button>
+                                <button class="action-btn ml-2 text-xs bg-gray-200 py-1 px-3 rounded hover:bg-gray-300" data-action="print-slip" data-order="#89339">Print Packing Slip</button>
                             </td>
                         </tr>
                         <tr class="bg-white border-b hover:bg-gray-50">
@@ -181,8 +183,8 @@ function render(container) {
                             <td class="px-4 py-3">Store 3 (Montreal)</td>
                             <td class="px-4 py-3">12</td>
                             <td class="px-4 py-3">
-                                <button class="text-xs bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600">Compare Rates</button>
-                                <button class="ml-2 text-xs bg-gray-200 py-1 px-3 rounded hover:bg-gray-300">Print Packing Slip</button>
+                                <button class="action-btn text-xs bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600" data-action="compare-rates" data-order="#89340">Compare Rates</button>
+                                <button class="action-btn ml-2 text-xs bg-gray-200 py-1 px-3 rounded hover:bg-gray-300" data-action="print-slip" data-order="#89340">Print Packing Slip</button>
                             </td>
                         </tr>
                          <tr class="bg-white border-b hover:bg-gray-50">
@@ -190,8 +192,8 @@ function render(container) {
                             <td class="px-4 py-3">Store 5 (Toronto)</td>
                             <td class="px-4 py-3">4</td>
                             <td class="px-4 py-3">
-                                <button class="text-xs bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600">Compare Rates</button>
-                                <button class="ml-2 text-xs bg-gray-200 py-1 px-3 rounded hover:bg-gray-300">Print Packing Slip</button>
+                                <button class="action-btn text-xs bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600" data-action="compare-rates" data-order="#89341">Compare Rates</button>
+                                <button class="action-btn ml-2 text-xs bg-gray-200 py-1 px-3 rounded hover:bg-gray-300" data-action="print-slip" data-order="#89341">Print Packing Slip</button>
                             </td>
                         </tr>
                     </tbody>
@@ -199,7 +201,84 @@ function render(container) {
             </div>
         </div>
     `;
+    addLogisticsEventListeners();
+}
+
+function addLogisticsEventListeners() {
+    document.getElementById('log-adjustment-btn')?.addEventListener('click', showLogAdjustmentModal);
+    
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const action = e.target.dataset.action;
+            const order = e.target.dataset.order;
+            if (action === 'compare-rates') {
+                showCompareRatesModal(order);
+            } else if (action === 'print-slip') {
+                showToast(`Packing slip for order ${order} sent to printer.`);
+            }
+        });
+    });
+}
+
+function showLogAdjustmentModal() {
+    const modalBody = `
+        <form id="log-adjustment-form" class="space-y-4">
+            <div>
+                <label for="adj-sku" class="block text-sm font-medium text-gray-700">SKU or Product Name</label>
+                <input type="text" id="adj-sku" name="adj-sku" placeholder="e.g., UH-BOOT-BR-9" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="adj-type" class="block text-sm font-medium text-gray-700">Adjustment Type</label>
+                <select id="adj-type" name="adj-type" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <option>Damaged Goods</option>
+                    <option>Cycle Count</option>
+                    <option>Stock Transfer</option>
+                    <option>Return to Vendor</option>
+                </select>
+            </div>
+            <div>
+                <label for="adj-quantity" class="block text-sm font-medium text-gray-700">Quantity</label>
+                <input type="number" id="adj-quantity" name="adj-quantity" placeholder="e.g., -5 or 10" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+            </div>
+             <div>
+                <label for="adj-notes" class="block text-sm font-medium text-gray-700">Notes</label>
+                <textarea id="adj-notes" name="adj-notes" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></textarea>
+            </div>
+             <div class="text-right">
+                <button type="submit" class="bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700">Submit Adjustment</button>
+            </div>
+        </form>
+    `;
+    showModal('Log Inventory Adjustment', modalBody);
+}
+
+function showCompareRatesModal(orderId) {
+    const modalBody = `
+        <div class="space-y-3">
+            <p class="text-sm">Showing best available rates for order <span class="font-semibold">${orderId}</span>.</p>
+            <div class="border rounded-lg">
+                <div class="p-3 grid grid-cols-3 gap-4 items-center bg-green-50 border-b-2 border-green-200">
+                    <span class="font-semibold text-gray-800">Canpar Ground</span>
+                    <span class="text-gray-600">1-2 Business Days</span>
+                    <span class="text-lg font-bold text-right text-green-700">$15.50</span>
+                </div>
+                 <div class="p-3 grid grid-cols-3 gap-4 items-center hover:bg-gray-50 border-b">
+                    <span class="font-semibold text-gray-800">Purolator Express</span>
+                    <span class="text-gray-600">Next Business Day</span>
+                    <span class="text-lg font-bold text-right">$22.75</span>
+                </div>
+                <div class="p-3 grid grid-cols-3 gap-4 items-center hover:bg-gray-50">
+                    <span class="font-semibold text-gray-800">Canada Post Priority</span>
+                    <span class="text-gray-600">Next Business Day by Noon</span>
+                    <span class="text-lg font-bold text-right">$28.90</span>
+                </div>
+            </div>
+             <div class="text-right pt-2">
+                 <button class="bg-green-600 text-white py-2 px-5 rounded-lg hover:bg-green-700">Select Canpar & Ship</button>
+            </div>
+        </div>
+    `;
+    showModal(`Compare Shipping Rates`, modalBody);
 }
 
 export { render as init };
-
