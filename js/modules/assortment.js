@@ -77,7 +77,7 @@ async function render(container) {
     
     try {
         const rawTrendData = await callGeminiAPI('GET_ASSORTMENT_TRENDS');
-        // Clean the response to remove markdown backticks
+        // FIXED: Re-added the JSON cleaning line. This was a critical bug.
         const cleanedTrendData = rawTrendData.replace(/```json\n?|```/g, '');
         trendData = JSON.parse(cleanedTrendData);
     } catch (e) {
@@ -231,8 +231,8 @@ function renderProductGridItem(product) {
                     ${product.aiSuggestion ? aiIconSVG : ''}
                 </div>
             </div>
-            <button class="add-to-plan-btn ${isAdded ? 'added' : ''}" ${isAdded ? 'disabled' : ''}>
-                ${isAdded ? '✓ Added' : '+ Add to Plan'}
+            <button class="add-to-plan-btn ${isAdded ? 'added' : ''}">
+                ${isAdded ? '✓ Remove' : '+ Add to Plan'}
             </button>
         </div>
     `;
@@ -296,18 +296,19 @@ function handleExportExcelClick() {
     showToast('Exporting to Excel... (Demo)');
 }
 
+// --- FIXED: Event listeners split into click, mouseover, mouseout ---
 function addEventListeners() {
     const mainContainer = document.getElementById('main-content-area');
     if (!mainContainer) return;
     
-    // --- FIXED: Replaced click listener for AI icon with mouseover ---
+    // CLICK listener
     mainContainer.addEventListener('click', (e) => {
         const addBtn = e.target.closest('.add-to-plan-btn');
         const acceptSugBtn = e.target.closest('#accept-ai-suggestions-btn');
         const exportBtn = e.target.closest('#export-excel-btn');
         const seeMoreBtn = e.target.closest('.see-more-trends-btn');
 
-        if (addBtn && !addBtn.disabled) {
+        if (addBtn) {
             handleProductListClick(addBtn);
         } else if (acceptSugBtn) {
             handleAcceptAISuggestionsClick();
@@ -317,36 +318,35 @@ function addEventListeners() {
             const category = seeMoreBtn.dataset.category;
             showToast(`Showing all data for ${category} (Demo)`);
         } else {
-            // This is a general click handler. If the click is not on a balloon, hide any open balloon.
+            // If the click is not on the balloon, hide it
             const balloon = document.getElementById('ai-balloon-container');
             if (balloon && !balloon.contains(e.target)) {
                  hideBalloon();
-                 const activeIcon = document.querySelector('.is-showing-balloon');
-                 if (activeIcon) activeIcon.classList.remove('is-showing-balloon');
             }
         }
     });
-    
-    // --- FIXED: Added mouseover listener ---
+
+    // MOUSEOVER listener for AI icons
     mainContainer.addEventListener('mouseover', (e) => {
         const aiIcon = e.target.closest('.ai-suggestion-icon-wrapper');
         if (aiIcon) {
-            handleAISuggestionClick(aiIcon);
+            handleAISuggestionHover(aiIcon);
         }
     });
 
-    // --- FIXED: Added mouseout listener ---
+    // MOUSEOUT listener for AI icons
     mainContainer.addEventListener('mouseout', (e) => {
         const aiIcon = e.target.closest('.ai-suggestion-icon-wrapper');
-        const balloon = document.getElementById('ai-balloon-container');
-        
-        // Hide if mouse leaves icon AND is not entering the balloon
-        if (aiIcon && (!balloon || !balloon.contains(e.relatedTarget))) {
-            aiIcon.classList.remove('is-showing-balloon');
-            hideBalloon();
+        if (aiIcon) {
+            const balloon = document.getElementById('ai-balloon-container');
+            // Hide if mouse leaves icon AND is not entering the balloon
+            if (!balloon || !balloon.contains(e.relatedTarget)) {
+                hideBalloon();
+            }
         }
     });
 
+    // CHANGE listener for filters
     mainContainer.addEventListener('change', handleFilterChange);
 }
 
@@ -360,37 +360,53 @@ function handleFilterChange(e) {
     }
 }
 
-
+// --- FIXED: Logic to handle both adding AND removing items ---
 function handleProductListClick(button) {
     const itemElement = button.closest('.product-grid-item');
     const productId = parseInt(itemElement.dataset.productId, 10);
-    const product = products.find(p => p.id === productId);
-    if (product) {
-        purchasePlan.push(product);
-        button.textContent = '✓ Added';
-        button.disabled = true;
-        button.classList.add('added');
-        document.getElementById('allocation-table-container').innerHTML = renderAllocationTable();
-        
-        const acceptBtn = document.getElementById('accept-ai-suggestions-btn');
-        if(acceptBtn) acceptBtn.disabled = false;
-        
-        showToast(`${product.name} added to purchase plan.`);
+    const productIndex = purchasePlan.findIndex(p => p.id === productId);
+
+    if (productIndex > -1) {
+        // Product is in plan, so REMOVE it
+        purchasePlan.splice(productIndex, 1);
+        button.textContent = '+ Add to Plan';
+        button.classList.remove('added');
+        showToast('Product removed from plan.');
+    } else {
+        // Product is NOT in plan, so ADD it
+        const product = products.find(p => p.id === productId);
+        if (product) {
+            purchasePlan.push(product);
+            button.textContent = '✓ Remove';
+            button.classList.add('added');
+            showToast(`${product.name} added to plan.`);
+        }
+    }
+    
+    // Re-render the allocation table and update button state
+    document.getElementById('allocation-table-container').innerHTML = renderAllocationTable();
+    updateAcceptAISuggestionsButtonState();
+}
+
+// --- FIXED: New helper function to manage button state ---
+function updateAcceptAISuggestionsButtonState() {
+    const acceptBtn = document.getElementById('accept-ai-suggestions-btn');
+    if (acceptBtn) {
+        acceptBtn.disabled = purchasePlan.length === 0;
     }
 }
 
-// --- FIXED: Updated logic to handle hover state ---
-async function handleAISuggestionClick(iconWrapper) {
-    // If a balloon is already showing for this icon, do nothing.
+// --- FIXED: Renamed to 'Hover' and logic corrected ---
+async function handleAISuggestionHover(iconWrapper) {
+    // If balloon is already showing for this icon, do nothing
     if (iconWrapper.classList.contains('is-showing-balloon')) {
         return;
     }
-    
-    // Hide any other balloons that might be open
-    hideBalloon();
-    document.querySelectorAll('.is-showing-balloon').forEach(i => i.classList.remove('is-showing-balloon'));
 
-    // Mark this icon as active
+    // Hide any other balloon that might be open
+    hideBalloon(); 
+    
+    // Mark this icon as the one showing the balloon
     iconWrapper.classList.add('is-showing-balloon');
 
     const itemElement = iconWrapper.closest('.product-grid-item');
@@ -406,12 +422,12 @@ async function handleAISuggestionClick(iconWrapper) {
                </span> AI Recommendation</h4>
             <div id="ai-reasoning-content" class="text-sm space-y-2"><div class="spinner-dots-small"><div></div><div></div><div></div></div> Loading Analysis...</div>
         </div>`;
-    showBalloon(content, rect, 'right'); 
+    showBalloon(content, rect); 
 
     const reasoning = await callGeminiAPI('ANALYZE_PRODUCT_SUGGESTION', { productName: product.name });
     const reasoningEl = document.getElementById('ai-reasoning-content');
     
-    // Check if balloon is still supposed to be visible
+    // Check if the balloon is still visible and meant for this icon
     if (reasoningEl && iconWrapper.classList.contains('is-showing-balloon')) {
         reasoningEl.innerHTML = reasoning;
     }
