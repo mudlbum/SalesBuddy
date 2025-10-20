@@ -452,7 +452,7 @@ body {
     display: grid;
     gap: 1rem;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    padding-bottom: 220px; /* Space for last row to expand */
+    padding-bottom: 290px; /* Space for last row to expand */
 }
 
 /* Placeholder to maintain grid structure. Height should match unexpanded card. */
@@ -497,7 +497,7 @@ body {
 
 /* Styles for the expanded state */
 .product-grid-item.expanded .product-card-content {
-    height: 320px;
+    height: 380px;
     background-color: #f9fafb;
     border-color: #6366f1;
     z-index: 10; /* Bring to front */
@@ -771,4 +771,3 @@ input:checked + .toggle-slider {
 input:checked + .toggle-slider:before {
     transform: translateX(16px);
 }
-

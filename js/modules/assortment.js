@@ -9,53 +9,53 @@ const products = [
     { id: 3, name: 'Milano Weave Loafer', brand: 'Milano', style: 'Woven Leather', gender: 'Womens', price: 210.00, img: 'images/03.jpg', aiSuggestion: true, sku: 'ML-WVLF-W-7', cost: 110.00, materials: 'Woven Leather, Rubber Sole', sizes: [6, 6.5, 7, 7.5, 8, 8.5, 9], colors: ['#a0522d', '#000000'] },
     { id: 4, name: 'SunStep Espadrille', brand: 'SunStep', style: 'Canvas Slip-On', gender: 'Womens', price: 89.99, img: 'images/04.jpg', sku: 'SS-ESPA-W-8', cost: 45.00, materials: 'Canvas, Jute Rope', sizes: [6, 7, 8, 9, 10], colors: ['#f5f5dc', '#000000'] },
     { id: 5, name: 'Velocity Charge XT', brand: 'Velocity', style: 'Retro Runners', gender: 'Womens', price: 155.00, img: 'images/05.jpg', sku: 'VL-CHGXT-W-7.5', cost: 78.00, materials: 'Suede, Mesh, Rubber', sizes: [6.5, 7, 7.5, 8, 8.5, 9], colors: ['#ffd700', '#000000'] },
-    { id: 6, name: 'TrekWise Glacier Boot', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Mens', price: 220.00, img: 'images/06.jpg' },
-    { id: 7, name: 'Milano Suede Driver', brand: 'Milano', style: 'Chunky Loafers', gender: 'Mens', price: 195.00, img: 'images/07.jpg' },
-    { id: 8, name: 'SunStep Beachcomber', brand: 'SunStep', style: 'Sandals', gender: 'Unisex', price: 65.50, img: 'images/08.jpg' },
-    { id: 9, name: 'Velocity Pace Trainer', brand: 'Velocity', style: 'Retro Runners', gender: 'Unisex', price: 130.00, img: 'images/09.jpg' },
-    { id: 10, name: 'TrekWise Summit Pro', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Mens', price: 250.00, img: 'images/10.jpg' },
-    { id: 11, name: 'Milano Classic Pump', brand: 'Milano', style: 'Heels', gender: 'Womens', price: 180.00, img: 'images/11.jpg' },
-    { id: 12, name: 'SunStep Boardwalk Flip', brand: 'SunStep', style: 'Sandals', gender: 'Mens', price: 45.00, img: 'images/12.jpg' },
-    { id: 13, name: 'Velocity Echo Sneaker', brand: 'Velocity', style: 'Retro Runners', gender: 'Womens', price: 160.00, img: 'images/13.jpg' },
-    { id: 14, name: 'TrekWise Trail Runner', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Womens', price: 175.00, img: 'images/14.jpg' },
-    { id: 15, name: 'Milano Tassel Loafer', brand: 'Milano', style: 'Chunky Loafers', gender: 'Mens', price: 225.00, img: 'images/15.jpg' },
-    { id: 16, name: 'SunStep Reef Walker', brand: 'SunStep', style: 'Sandals', gender: 'Unisex', price: 75.00, img: 'images/16.jpg' },
-    { id: 17, name: 'Velocity Apex High-Top', brand: 'Velocity', style: 'Retro Runners', gender: 'Unisex', price: 170.00, img: 'images/17.jpg', aiSuggestion: true },
-    { id: 18, name: 'TrekWise Canyon Sandal', brand: 'TrekWise', style: 'Sandals', gender: 'Mens', price: 110.00, img: 'images/18.jpg' },
-    { id: 19, name: 'Milano Ballet Flat', brand: 'Milano', style: 'Flats', gender: 'Womens', price: 165.00, img: 'images/19.jpg' },
-    { id: 20, name: 'SunStep Cove Slipper', brand: 'SunStep', style: 'Canvas Slip-On', gender: 'Womens', price: 95.00, img: 'images/20.jpg' },
-    { id: 21, name: 'Velocity Volt Runner', brand: 'Velocity', style: 'Retro Runners', gender: 'Mens', price: 150.00, img: 'images/21.jpg' },
-    { id: 22, name: 'TrekWise Tundra Boot', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Unisex', price: 235.00, img: 'images/22.jpg' },
-    { id: 23, name: 'Milano Velvet Loafer', brand: 'Milano', style: 'Chunky Loafers', gender: 'Womens', price: 240.00, img: 'images/23.jpg', aiSuggestion: true },
-    { id: 24, name: 'SunStep Laguna Slide', brand: 'SunStep', style: 'Sandals', gender: 'Womens', price: 70.00, img: 'images/24.jpg' },
-    { id: 25, name: 'Aura Flex Trainer', brand: 'Aura', style: 'Performance', gender: 'Womens', price: 135.00, img: 'images/25.jpg' },
-    { id: 26, name: 'Apex Ascent Hiker', brand: 'Apex', style: 'Hiking Boots', gender: 'Mens', price: 195.00, img: 'images/26.jpg' },
-    { id: 27, name: 'Aura Stratus Runner', brand: 'Aura', style: 'Retro Runners', gender: 'Womens', price: 155.00, img: 'images/27.jpg', aiSuggestion: true },
-    { id: 28, name: 'Apex Urban Commuter', brand: 'Apex', style: 'Canvas Slip-On', gender: 'Unisex', price: 110.00, img: 'images/28.jpg' },
-    { id: 29, name: 'TrekWise Ridgeback', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Mens', price: 210.00, img: 'images/29.jpg' },
-    { id: 30, name: 'Velocity Nova Trainer', brand: 'Velocity', style: 'Performance', gender: 'Womens', price: 140.00, img: 'images/30.jpg' },
-    { id: 31, name: 'Milano Linen Espadrille', brand: 'Milano', style: 'Canvas Slip-On', gender: 'Womens', price: 185.00, img: 'images/31.jpg' },
-    { id: 32, name: 'SunStep Coastline Driver', brand: 'SunStep', style: 'Chunky Loafers', gender: 'Mens', price: 95.00, img: 'images/32.jpg' },
-    { id: 33, name: 'Aura Bloom Flat', brand: 'Aura', style: 'Flats', gender: 'Womens', price: 120.00, img: 'images/33.jpg' },
-    { id: 34, name: 'Apex Terrain Sandal', brand: 'Apex', style: 'Sandals', gender: 'Unisex', price: 130.00, img: 'images/34.jpg' },
-    { id: 35, name: 'TrekWise Sierra Low', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Womens', price: 165.00, img: 'images/35.jpg' },
-    { id: 36, name: 'Velocity Comet Racer', brand: 'Velocity', style: 'Retro Runners', gender: 'Mens', price: 160.00, img: 'images/36.jpg' },
-    { id: 37, name: 'Milano Stiletto Heel', brand: 'Milano', style: 'Heels', gender: 'Womens', price: 250.00, img: 'images/37.jpg' },
-    { id: 38, name: 'SunStep Pier Sandal', brand: 'SunStep', style: 'Sandals', gender: 'Womens', price: 80.00, img: 'images/38.jpg' },
-    { id: 39, name: 'Aura Zenith Walker', brand: 'Aura', style: 'Performance', gender: 'Unisex', price: 145.00, img: 'images/39.jpg' },
-    { id: 40, name: 'Apex Trailblazer', brand: 'Apex', style: 'Hiking Boots', gender: 'Unisex', price: 220.00, img: 'images/40.jpg', aiSuggestion: true },
-    { id: 41, name: 'Milano Horsebit Loafer', brand: 'Milano', style: 'Chunky Loafers', gender: 'Mens', price: 280.00, img: 'images/41.jpg' },
-    { id: 42, name: 'Velocity Phantom', brand: 'Velocity', style: 'Retro Runners', gender: 'Mens', price: 175.00, img: 'images/42.jpg' },
-    { id: 43, name: 'TrekWise Vista Sandal', brand: 'TrekWise', style: 'Sandals', gender: 'Womens', price: 125.00, img: 'images/43.jpg' },
-    { id: 44, name: 'SunStep Marina Slip-On', brand: 'SunStep', style: 'Canvas Slip-On', gender: 'Unisex', price: 75.00, img: 'images/44.jpg' },
-    { id: 45, name: 'Aura Solstice Runner', brand: 'Aura', style: 'Performance', gender: 'Womens', price: 160.00, img: 'images/45.jpg' },
-    { id: 46, name: 'Apex Stealth Boot', brand: 'Apex', style: 'Hiking Boots', gender: 'Mens', price: 240.00, img: 'images/46.jpg' },
-    { id: 47, name: 'Milano Suede Pump', brand: 'Milano', style: 'Heels', gender: 'Womens', price: 220.00, img: 'images/47.jpg' },
-    { id: 48, name: 'Velocity Core Trainer', brand: 'Velocity', style: 'Performance', gender: 'Unisex', price: 125.00, img: 'images/48.jpg' },
-    { id: 49, name: 'SunStep Island Loafer', brand: 'SunStep', style: 'Woven Leather', gender: 'Mens', price: 115.00, img: 'images/49.jpg' },
-    { id: 50, name: 'Aura Harmony Flat', brand: 'Aura', style: 'Flats', gender: 'Womens', price: 130.00, img: 'images/50.jpg', aiSuggestion: true },
-    { id: 51, name: 'Apex Nomad Traveler', brand: 'Apex', style: 'Canvas Slip-On', gender: 'Mens', price: 105.00, img: 'images/51.jpg' },
-    { id: 52, name: 'TrekWise Peak Seeker', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Unisex', price: 260.00, img: 'images/52.jpg' }
+    { id: 6, name: 'TrekWise Glacier Boot', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Mens', price: 220.00, img: 'images/06.jpg', sku: 'TW-GLCB-M-10', cost: 115.00, materials: 'Leather, Insulation, Rubber', sizes: [9, 9.5, 10, 10.5, 11, 12], colors: ['#4a4a4a', '#000000'] },
+    { id: 7, name: 'Milano Suede Driver', brand: 'Milano', style: 'Chunky Loafers', gender: 'Mens', price: 195.00, img: 'images/07.jpg', sku: 'ML-SDDR-M-9', cost: 105.00, materials: 'Suede, Rubber', sizes: [8, 8.5, 9, 9.5, 10, 11], colors: ['#000080', '#8B4513'] },
+    { id: 8, name: 'SunStep Beachcomber', brand: 'SunStep', style: 'Sandals', gender: 'Unisex', price: 65.50, img: 'images/08.jpg', sku: 'SS-BCH-U-9', cost: 32.00, materials: 'Canvas, EVA', sizes: [7, 8, 9, 10, 11, 12], colors: ['#3cb371', '#5f9ea0'] },
+    { id: 9, name: 'Velocity Pace Trainer', brand: 'Velocity', style: 'Retro Runners', gender: 'Unisex', price: 130.00, img: 'images/09.jpg', sku: 'VL-PCT-U-8.5', cost: 65.00, materials: 'Mesh, Synthetic', sizes: [7, 7.5, 8, 8.5, 9, 9.5, 10], colors: ['#ffffff', '#0000ff'] },
+    { id: 10, name: 'TrekWise Summit Pro', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Mens', price: 250.00, img: 'images/10.jpg', sku: 'TW-SMPR-M-11', cost: 125.00, materials: 'Full-grain Leather, Vibram', sizes: [9, 10, 11, 12, 13], colors: ['#808080', '#00ff00'] },
+    { id: 11, name: 'Milano Classic Pump', brand: 'Milano', style: 'Heels', gender: 'Womens', price: 180.00, img: 'images/11.jpg', sku: 'ML-CLSP-W-7', cost: 90.00, materials: 'Patent Leather', sizes: [6, 6.5, 7, 7.5, 8, 8.5, 9], colors: ['#ff0000', '#000000'] },
+    { id: 12, name: 'SunStep Boardwalk Flip', brand: 'SunStep', style: 'Sandals', gender: 'Mens', price: 45.00, img: 'images/12.jpg', sku: 'SS-BWFP-M-10', cost: 22.00, materials: 'Rubber, Nylon', sizes: [8, 9, 10, 11, 12, 13], colors: ['#cd853f', '#000000'] },
+    { id: 13, name: 'Velocity Echo Sneaker', brand: 'Velocity', style: 'Retro Runners', gender: 'Womens', price: 160.00, img: 'images/13.jpg', sku: 'VL-ECHO-W-8', cost: 80.00, materials: 'Suede, Mesh, Rubber', sizes: [6, 7, 8, 9, 10], colors: ['#ffff00', '#c0c0c0'] },
+    { id: 14, name: 'TrekWise Trail Runner', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Womens', price: 175.00, img: 'images/14.jpg', sku: 'TW-TRLR-W-7.5', cost: 88.00, materials: 'Synthetic, Mesh, Rubber', sizes: [6.5, 7, 7.5, 8, 8.5, 9], colors: ['#add8e6', '#808080'] },
+    { id: 15, name: 'Milano Tassel Loafer', brand: 'Milano', style: 'Chunky Loafers', gender: 'Mens', price: 225.00, img: 'images/15.jpg', sku: 'ML-TSLF-M-9.5', cost: 112.00, materials: 'Calfskin Leather', sizes: [8, 9, 9.5, 10, 11], colors: ['#000000', '#800000'] },
+    { id: 16, name: 'SunStep Reef Walker', brand: 'SunStep', style: 'Sandals', gender: 'Unisex', price: 75.00, img: 'images/16.jpg', sku: 'SS-RFWK-U-9', cost: 37.00, materials: 'Neoprene, Rubber', sizes: [7, 8, 9, 10, 11], colors: ['#008000', '#000000'] },
+    { id: 17, name: 'Velocity Apex High-Top', brand: 'Velocity', style: 'Retro Runners', gender: 'Unisex', price: 170.00, img: 'images/17.jpg', aiSuggestion: true, sku: 'VL-APXH-U-10', cost: 85.00, materials: 'Leather, Mesh, Rubber', sizes: [8, 9, 10, 11, 12], colors: ['#ffffff', '#0000ff'] },
+    { id: 18, name: 'TrekWise Canyon Sandal', brand: 'TrekWise', style: 'Sandals', gender: 'Mens', price: 110.00, img: 'images/18.jpg', sku: 'TW-CYNS-M-11', cost: 55.00, materials: 'Webbing, Rubber', sizes: [9, 10, 11, 12, 13], colors: ['#f5deb3', '#a0522d'] },
+    { id: 19, name: 'Milano Ballet Flat', brand: 'Milano', style: 'Flats', gender: 'Womens', price: 165.00, img: 'images/19.jpg', sku: 'ML-BLTF-W-7', cost: 82.00, materials: 'Nappa Leather', sizes: [6, 7, 8, 9], colors: ['#ff0000', '#000000', '#f5f5dc'] },
+    { id: 20, name: 'SunStep Cove Slipper', brand: 'SunStep', style: 'Canvas Slip-On', gender: 'Womens', price: 95.00, img: 'images/20.jpg', sku: 'SS-CVSL-W-8', cost: 47.00, materials: 'Canvas, Fleece Lining', sizes: [6, 7, 8, 9, 10], colors: ['#ffa500', '#d2b48c'] },
+    { id: 21, name: 'Velocity Volt Runner', brand: 'Velocity', style: 'Retro Runners', gender: 'Mens', price: 150.00, img: 'images/21.jpg', sku: 'VL-VLTR-M-10.5', cost: 75.00, materials: 'Mesh, Synthetic', sizes: [9, 10, 10.5, 11, 12], colors: ['#000000', '#ffff00'] },
+    { id: 22, name: 'TrekWise Tundra Boot', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Unisex', price: 235.00, img: 'images/22.jpg', sku: 'TW-TNDB-U-9', cost: 118.00, materials: 'Leather, Waterproof Membrane', sizes: [8, 9, 10, 11], colors: ['#87ceeb', '#4682b4'] },
+    { id: 23, name: 'Milano Velvet Loafer', brand: 'Milano', style: 'Chunky Loafers', gender: 'Womens', price: 240.00, img: 'images/23.jpg', aiSuggestion: true, sku: 'ML-VLVL-W-7.5', cost: 120.00, materials: 'Velvet, Leather', sizes: [6, 7, 7.5, 8, 9], colors: ['#800080', '#000000'] },
+    { id: 24, name: 'SunStep Laguna Slide', brand: 'SunStep', style: 'Sandals', gender: 'Womens', price: 70.00, img: 'images/24.jpg', sku: 'SS-LGNS-W-8', cost: 35.00, materials: 'Synthetic, Cork', sizes: [6, 7, 8, 9, 10], colors: ['#90ee90', '#f0e68c'] },
+    { id: 25, name: 'Aura Flex Trainer', brand: 'Aura', style: 'Performance', gender: 'Womens', price: 135.00, img: 'images/25.jpg', sku: 'AU-FLXT-W-8', cost: 67.00, materials: 'Knit, EVA', sizes: [6, 7, 8, 9], colors: ['#ffc0cb', '#ffffff'] },
+    { id: 26, name: 'Apex Ascent Hiker', brand: 'Apex', style: 'Hiking Boots', gender: 'Mens', price: 195.00, img: 'images/26.jpg', sku: 'AP-ASCH-M-10', cost: 98.00, materials: 'Suede, Nylon, Rubber', sizes: [9, 10, 11, 12], colors: ['#00008b', '#ffa500'] },
+    { id: 27, name: 'Aura Stratus Runner', brand: 'Aura', style: 'Retro Runners', gender: 'Womens', price: 155.00, img: 'images/27.jpg', aiSuggestion: true, sku: 'AU-STRR-W-7', cost: 78.00, materials: 'Mesh, Suede', sizes: [6, 7, 8, 9], colors: ['#ffc0cb', '#ffffff'] },
+    { id: 28, name: 'Apex Urban Commuter', brand: 'Apex', style: 'Canvas Slip-On', gender: 'Unisex', price: 110.00, img: 'images/28.jpg', sku: 'AP-URBC-U-9', cost: 55.00, materials: 'Canvas, Rubber', sizes: [7, 8, 9, 10, 11], colors: ['#4682b4', '#ffffff'] },
+    { id: 29, name: 'TrekWise Ridgeback', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Mens', price: 210.00, img: 'images/29.jpg', sku: 'TW-RGBK-M-11', cost: 105.00, materials: 'Suede, Cordura', sizes: [9, 10, 11, 12], colors: ['#556b2f', '#000000'] },
+    { id: 30, name: 'Velocity Nova Trainer', brand: 'Velocity', style: 'Performance', gender: 'Womens', price: 140.00, img: 'images/30.jpg', sku: 'VL-NVTR-W-8.5', cost: 70.00, materials: 'Mesh, TPU', sizes: [6, 7, 8, 8.5, 9], colors: ['#add8e6', '#ffffff'] },
+    { id: 31, name: 'Milano Linen Espadrille', brand: 'Milano', style: 'Canvas Slip-On', gender: 'Womens', price: 185.00, img: 'images/31.jpg', sku: 'ML-LNSP-W-8', cost: 92.00, materials: 'Linen, Jute', sizes: [6, 7, 8, 9], colors: ['#ff0000', '#f5f5dc'] },
+    { id: 32, name: 'SunStep Coastline Driver', brand: 'SunStep', style: 'Chunky Loafers', gender: 'Mens', price: 95.00, img: 'images/32.jpg', sku: 'SS-CSTD-M-10', cost: 48.00, materials: 'Leather, Rubber', sizes: [8, 9, 10, 11], colors: ['#d2b48c', '#a0522d'] },
+    { id: 33, name: 'Aura Bloom Flat', brand: 'Aura', style: 'Flats', gender: 'Womens', price: 120.00, img: 'images/33.jpg', sku: 'AU-BLMF-W-7', cost: 60.00, materials: 'Fabric, Leather', sizes: [6, 7, 8, 9], colors: ['#ffc0cb', '#f5f5dc'] },
+    { id: 34, name: 'Apex Terrain Sandal', brand: 'Apex', style: 'Sandals', gender: 'Unisex', price: 130.00, img: 'images/34.jpg', sku: 'AP-TRNS-U-10', cost: 65.00, materials: 'Nylon, Rubber', sizes: [8, 9, 10, 11, 12], colors: ['#000080', '#808080'] },
+    { id: 35, name: 'TrekWise Sierra Low', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Womens', price: 165.00, img: 'images/35.jpg', sku: 'TW-SRLW-W-7.5', cost: 83.00, materials: 'Suede, Mesh', sizes: [6, 7, 7.5, 8, 9], colors: ['#008000', '#808080'] },
+    { id: 36, name: 'Velocity Comet Racer', brand: 'Velocity', style: 'Retro Runners', gender: 'Mens', price: 160.00, img: 'images/36.jpg', sku: 'VL-CMTR-M-10', cost: 80.00, materials: 'Synthetic, Mesh', sizes: [9, 10, 11, 12], colors: ['#0000ff', '#c0c0c0'] },
+    { id: 37, name: 'Milano Stiletto Heel', brand: 'Milano', style: 'Heels', gender: 'Womens', price: 250.00, img: 'images/37.jpg', sku: 'ML-STLH-W-7', cost: 125.00, materials: 'Leather', sizes: [6, 7, 8, 9], colors: ['#ff0000', '#000000'] },
+    { id: 38, name: 'SunStep Pier Sandal', brand: 'SunStep', style: 'Sandals', gender: 'Womens', price: 80.00, img: 'images/38.jpg', sku: 'SS-PRSD-W-8', cost: 40.00, materials: 'Leatherette', sizes: [6, 7, 8, 9, 10], colors: ['#ffa500', '#f5deb3'] },
+    { id: 39, name: 'Aura Zenith Walker', brand: 'Aura', style: 'Performance', gender: 'Unisex', price: 145.00, img: 'images/39.jpg', sku: 'AU-ZNWK-U-9', cost: 72.00, materials: 'Knit, Foam', sizes: [7, 8, 9, 10, 11], colors: ['#ffc0cb', '#c0c0c0'] },
+    { id: 40, name: 'Apex Trailblazer', brand: 'Apex', style: 'Hiking Boots', gender: 'Unisex', price: 220.00, img: 'images/40.jpg', aiSuggestion: true, sku: 'AP-TRBZ-U-10', cost: 110.00, materials: 'Leather, Ballistic Nylon', sizes: [8, 9, 10, 11, 12], colors: ['#00008b', '#ffa500'] },
+    { id: 41, name: 'Milano Horsebit Loafer', brand: 'Milano', style: 'Chunky Loafers', gender: 'Mens', price: 280.00, img: 'images/41.jpg', sku: 'ML-HBLF-M-9.5', cost: 140.00, materials: 'Leather', sizes: [8, 9, 9.5, 10, 11], colors: ['#8b0000', '#000000'] },
+    { id: 42, name: 'Velocity Phantom', brand: 'Velocity', style: 'Retro Runners', gender: 'Mens', price: 175.00, img: 'images/42.jpg', sku: 'VL-PHTM-M-10', cost: 88.00, materials: 'Leather, Mesh', sizes: [9, 10, 11, 12], colors: ['#000080', '#c0c0c0'] },
+    { id: 43, name: 'TrekWise Vista Sandal', brand: 'TrekWise', style: 'Sandals', gender: 'Womens', price: 125.00, img: 'images/43.jpg', sku: 'TW-VSSD-W-8', cost: 62.00, materials: 'Webbing, EVA', sizes: [6, 7, 8, 9], colors: ['#556b2f', '#f5deb3'] },
+    { id: 44, name: 'SunStep Marina Slip-On', brand: 'SunStep', style: 'Canvas Slip-On', gender: 'Unisex', price: 75.00, img: 'images/44.jpg', sku: 'SS-MRNA-U-9', cost: 38.00, materials: 'Canvas, Rubber', sizes: [7, 8, 9, 10, 11], colors: ['#ffa500', '#ffffff'] },
+    { id: 45, name: 'Aura Solstice Runner', brand: 'Aura', style: 'Performance', gender: 'Womens', price: 160.00, img: 'images/45.jpg', sku: 'AU-SOLR-W-7.5', cost: 80.00, materials: 'Engineered Mesh', sizes: [6, 7, 7.5, 8, 9], colors: ['#ff69b4', '#ffffff'] },
+    { id: 46, name: 'Apex Stealth Boot', brand: 'Apex', style: 'Hiking Boots', gender: 'Mens', price: 240.00, img: 'images/46.jpg', sku: 'AP-STLB-M-11', cost: 120.00, materials: 'Synthetic, Waterproof', sizes: [9, 10, 11, 12, 13], colors: ['#4682b4', '#000000'] },
+    { id: 47, name: 'Milano Suede Pump', brand: 'Milano', style: 'Heels', gender: 'Womens', price: 220.00, img: 'images/47.jpg', sku: 'ML-SDPM-W-7', cost: 110.00, materials: 'Suede', sizes: [6, 7, 8, 9], colors: ['#ff0000', '#000000'] },
+    { id: 48, name: 'Velocity Core Trainer', brand: 'Velocity', style: 'Performance', gender: 'Unisex', price: 125.00, img: 'images/48.jpg', sku: 'VL-CRTR-U-9', cost: 63.00, materials: 'Mesh, Synthetic', sizes: [7, 8, 9, 10, 11], colors: ['#ffffff', '#0000ff'] },
+    { id: 49, name: 'SunStep Island Loafer', brand: 'SunStep', style: 'Woven Leather', gender: 'Mens', price: 115.00, img: 'images/49.jpg', sku: 'SS-ISLL-M-10', cost: 58.00, materials: 'Woven Leather', sizes: [8, 9, 10, 11], colors: ['#d2691e', '#a0522d'] },
+    { id: 50, name: 'Aura Harmony Flat', brand: 'Aura', style: 'Flats', gender: 'Womens', price: 130.00, img: 'images/50.jpg', aiSuggestion: true, sku: 'AU-HMNF-W-8', cost: 65.00, materials: 'Leather', sizes: [6, 7, 8, 9], colors: ['#ffc0cb', '#000000'] },
+    { id: 51, name: 'Apex Nomad Traveler', brand: 'Apex', style: 'Canvas Slip-On', gender: 'Mens', price: 105.00, img: 'images/51.jpg', sku: 'AP-NMD-M-10', cost: 53.00, materials: 'Canvas, Rubber', sizes: [8, 9, 10, 11], colors: ['#191970', '#ffffff'] },
+    { id: 52, name: 'TrekWise Peak Seeker', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Unisex', price: 260.00, img: 'images/52.jpg', sku: 'TW-PKSK-U-10', cost: 130.00, materials: 'Leather, Gore-Tex', sizes: [8, 9, 10, 11, 12], colors: ['#008000', '#000000'] }
 ];
 
 const stores = Array.from({ length: 100 }, (_, i) => {
@@ -347,10 +347,10 @@ function handleExportExcelClick() {
 }
 
 function addEventListeners() {
-    const mainContainer = document.getElementById('main-content-area');
-    if (!mainContainer) return;
+    const moduleContainer = document.querySelector('.assortment-planner');
+    if (!moduleContainer) return;
     
-    mainContainer.addEventListener('click', (e) => {
+    moduleContainer.addEventListener('click', (e) => {
         const addBtn = e.target.closest('.add-to-plan-btn');
         const acceptSugBtn = e.target.closest('#accept-ai-suggestions-btn');
         const exportBtn = e.target.closest('#export-excel-btn');
@@ -377,14 +377,14 @@ function addEventListeners() {
         }
     });
 
-    mainContainer.addEventListener('mouseover', (e) => {
+    moduleContainer.addEventListener('mouseover', (e) => {
         const aiIcon = e.target.closest('.ai-suggestion-icon-wrapper');
         if (aiIcon) {
             handleAISuggestionHover(aiIcon);
         }
     });
 
-    mainContainer.addEventListener('mouseout', (e) => {
+    moduleContainer.addEventListener('mouseout', (e) => {
         const aiIcon = e.target.closest('.ai-suggestion-icon-wrapper');
         if (aiIcon) {
             const balloon = document.getElementById('ai-balloon-container');
@@ -394,7 +394,7 @@ function addEventListeners() {
         }
     });
 
-    mainContainer.addEventListener('change', handleFilterChange);
+    moduleContainer.addEventListener('change', handleFilterChange);
 }
 
 function handleProductExpand(clickedItem) {
