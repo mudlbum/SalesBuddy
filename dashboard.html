@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +9,6 @@
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-
 <body class="bg-gray-100 text-gray-800">
 
     <div class="flex h-screen">
@@ -28,26 +26,58 @@
             <header class="bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center">
                 <h1 id="module-title" class="text-2xl font-semibold text-gray-700">Loading...</h1>
                 <div class="flex items-center space-x-4">
-                    <input type="text" placeholder="Search..."
-                        class="px-4 py-2 w-64 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button id="upload-file-btn"
-                        class="flex items-center space-x-2 text-sm bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                        </svg>
+                    <input type="text" placeholder="Search..." class="px-4 py-2 w-64 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="upload-file-btn" class="flex items-center space-x-2 text-sm bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                         <span>Upload</span>
                     </button>
                     <div class="relative">
-                        <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
-                            </path>
-                        </svg>
+                        <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                     </div>
-                    <div id="user-initials"
-                        class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
-                        --</div>
+                    <!-- Account Menu Dropdown -->
+                    <div class="relative" id="account-menu-container">
+                        <button id="account-menu-button" class="block focus:outline-none">
+                            <img id="user-profile-picture" class="w-10 h-10 rounded-full object-cover" src="https://placehold.co/100x100/3B82F6/FFFFFF?text=SM" alt="User Profile">
+                        </button>
+                        <div id="account-menu" class="hidden absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl z-50 border border-gray-200 overflow-hidden">
+                            <!-- Main Menu View -->
+                            <div id="account-menu-main-view">
+                                <div class="p-4 border-b">
+                                    <p class="font-semibold text-gray-800" id="menu-username">manager@softmoc.com</p>
+                                    <p class="text-sm text-gray-500">Store Manager</p>
+                                </div>
+                                <nav class="py-2">
+                                    <a href="#" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                        <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                        <span>My Profile</span>
+                                    </a>
+                                    <button id="settings-menu-btn" class="w-full text-left flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                        <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                        <span>Settings</span>
+                                    </button>
+                                </nav>
+                                <div class="border-t p-2">
+                                    <a href="index.html" id="logout-btn" class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                                       <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                                        <span>Logout</span>
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- Settings Sub-Menu View -->
+                            <div id="account-menu-settings-view" class="hidden">
+                                <div class="p-2 flex items-center border-b">
+                                    <button id="settings-back-btn" class="p-2 rounded-full hover:bg-gray-100">
+                                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                    </button>
+                                    <p class="font-semibold text-gray-800 flex-grow text-center">Module Settings</p>
+                                    <div class="w-9"></div> <!-- Spacer to balance the back button -->
+                                </div>
+                                <div id="module-settings-container" class="p-4 space-y-4">
+                                    <!-- Module toggles will be generated here by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -60,35 +90,31 @@
 
     <!-- AI Balloon Container -->
     <div id="ai-balloon-container">
-        <div id="ai-balloon-content"></div>
+        <!-- Content will be injected here by js/utils.js -->
     </div>
-
+    
     <!-- Floating Chat Widget -->
     <div id="chat-widget-container" class="chat-widget">
         <div id="chat-popup" class="chat-popup">
-            <div class="chat-header">
+             <div class="chat-header">
                 <div class="flex flex-col">
                     <h3 class="font-bold text-lg">Messenger</h3>
                 </div>
-                <!-- CHAT MODE TOGGLE -->
+                 <!-- CHAT MODE TOGGLE -->
                 <div id="chat-mode-toggle" class="relative bg-gray-200 rounded-full p-1 flex items-center">
-                    <div id="chat-mode-slider" class="absolute top-1 bottom-1 left-1 bg-white rounded-full shadow-md">
-                    </div>
-                    <button data-mode="message"
-                        class="chat-mode-btn relative z-10 w-20 text-center text-xs font-semibold py-1 rounded-full">Message</button>
-                    <button data-mode="email"
-                        class="chat-mode-btn relative z-10 w-20 text-center text-xs font-semibold py-1 rounded-full">Email</button>
-                    <button data-mode="sms"
-                        class="chat-mode-btn relative z-10 w-20 text-center text-xs font-semibold py-1 rounded-full">SMS</button>
+                    <div id="chat-mode-slider" class="absolute top-1 bottom-1 left-1 bg-white rounded-full shadow-md"></div>
+                    <button data-mode="message" class="chat-mode-btn relative z-10 w-20 text-center text-xs font-semibold py-1 rounded-full">Message</button>
+                    <button data-mode="email" class="chat-mode-btn relative z-10 w-20 text-center text-xs font-semibold py-1 rounded-full">Email</button>
+                    <button data-mode="sms" class="chat-mode-btn relative z-10 w-20 text-center text-xs font-semibold py-1 rounded-full">SMS</button>
                 </div>
             </div>
             <div id="chat-user-selection" class="chat-user-pills">
-                <button class="user-pill active" data-persona="AI Assistant">AI Assistant</button>
-                <button class="user-pill" data-persona="HQ Buyer">HQ Buyer</button>
-                <button class="user-pill" data-persona="Vendor Rep">Vendor Rep</button>
-                <button class="user-pill" data-persona="Vendor2 Rep">Vendor2 Rep</button>
-                <button class="user-pill" data-persona="Logistics Manager">Logistics Manager</button>
-                <button class="user-pill" data-persona="Accounting Manager">Accounting Manager</button>
+                 <button class="user-pill active" data-persona="AI Assistant">AI Assistant</button>
+                 <button class="user-pill" data-persona="HQ Buyer">HQ Buyer</button>
+                 <button class="user-pill" data-persona="Vendor Rep">Vendor Rep</button>
+                 <button class="user-pill" data-persona="Vendor2 Rep">Vendor2 Rep</button>
+                 <button class="user-pill" data-persona="Logistics Manager">Logistics Manager</button>
+                 <button class="user-pill" data-persona="Accounting Manager">Accounting Manager</button>
             </div>
             <div id="chat-window" class="chat-messages">
                 <!-- Messages will be dynamically added here -->
@@ -96,43 +122,19 @@
             <div class="chat-input-area">
                 <input id="chat-input" type="text" placeholder="Type your message..." class="chat-input">
                 <button id="chat-send-btn" class="chat-send-btn">
-                    <svg class="w-5 h-5 transform rotate-90" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                            d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z">
-                        </path>
-                    </svg>
+                    <svg class="w-5 h-5 transform rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
                 </button>
             </div>
         </div>
         <button id="open-chat-btn" class="chat-icon-button">
-            <svg class="w-8 h-8 chat-bubble-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
-                </path>
-            </svg>
-            <svg class="w-8 h-8 close-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
+            <svg class="w-8 h-8 chat-bubble-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+            <svg class="w-8 h-8 close-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
     </div>
 
     <!-- Toast Notification Container -->
     <div id="toast-container"></div>
-    
-    <!-- Settings Modal -->
-    <div id="settings-modal"
-        class="settings-modal fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold">Module Settings</h2>
-                <button id="close-settings-modal" class="text-gray-500 hover:text-gray-700">&times;</button>
-            </div>
-            <p class="text-sm text-gray-600 mb-4">Enable or disable modules shown in the sidebar.</p>
-            <div id="module-toggle-list" class="space-y-3">
-            </div>
-        </div>
-    </div>
+
     <script type="module" src="js/main.js"></script>
 </body>
-
 </html>
