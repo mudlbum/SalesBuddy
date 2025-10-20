@@ -4,11 +4,11 @@ import { showBalloon, hideBalloon, showToast } from '../utils.js';
 // --- DEMO DATA & STATE ---
 
 const products = [
-    { id: 1, name: 'TrekWise Alpine Boot', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Unisex', price: 189.99, img: 'images/01.jpg', aiSuggestion: true },
-    { id: 2, name: 'Velocity Sprint Runner', brand: 'Velocity', style: 'Retro Runners', gender: 'Mens', price: 145.50, img: 'images/02.jpg', aiSuggestion: true },
-    { id: 3, name: 'Milano Weave Loafer', brand: 'Milano', style: 'Woven Leather', gender: 'Womens', price: 210.00, img: 'images/03.jpg', aiSuggestion: true },
-    { id: 4, name: 'SunStep Espadrille', brand: 'SunStep', style: 'Canvas Slip-On', gender: 'Womens', price: 89.99, img: 'images/04.jpg' },
-    { id: 5, name: 'Velocity Charge XT', brand: 'Velocity', style: 'Retro Runners', gender: 'Womens', price: 155.00, img: 'images/05.jpg' },
+    { id: 1, name: 'TrekWise Alpine Boot', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Unisex', price: 189.99, img: 'images/01.jpg', aiSuggestion: true, sku: 'TW-ALPB-U-9.5', cost: 95.50, materials: 'Leather, Gore-Tex, Rubber', sizes: [8, 8.5, 9, 9.5, 10, 10.5, 11, 12], colors: ['#5c4033', '#000000', '#808080'] },
+    { id: 2, name: 'Velocity Sprint Runner', brand: 'Velocity', style: 'Retro Runners', gender: 'Mens', price: 145.50, img: 'images/02.jpg', aiSuggestion: true, sku: 'VL-SPRR-M-10', cost: 72.00, materials: 'Mesh, Synthetic, EVA', sizes: [9, 9.5, 10, 10.5, 11, 12, 13], colors: ['#0000ff', '#ffffff', '#ff0000'] },
+    { id: 3, name: 'Milano Weave Loafer', brand: 'Milano', style: 'Woven Leather', gender: 'Womens', price: 210.00, img: 'images/03.jpg', aiSuggestion: true, sku: 'ML-WVLF-W-7', cost: 110.00, materials: 'Woven Leather, Rubber Sole', sizes: [6, 6.5, 7, 7.5, 8, 8.5, 9], colors: ['#a0522d', '#000000'] },
+    { id: 4, name: 'SunStep Espadrille', brand: 'SunStep', style: 'Canvas Slip-On', gender: 'Womens', price: 89.99, img: 'images/04.jpg', sku: 'SS-ESPA-W-8', cost: 45.00, materials: 'Canvas, Jute Rope', sizes: [6, 7, 8, 9, 10], colors: ['#f5f5dc', '#000000'] },
+    { id: 5, name: 'Velocity Charge XT', brand: 'Velocity', style: 'Retro Runners', gender: 'Womens', price: 155.00, img: 'images/05.jpg', sku: 'VL-CHGXT-W-7.5', cost: 78.00, materials: 'Suede, Mesh, Rubber', sizes: [6.5, 7, 7.5, 8, 8.5, 9], colors: ['#ffd700', '#000000'] },
     { id: 6, name: 'TrekWise Glacier Boot', brand: 'TrekWise', style: 'Hiking Boots', gender: 'Mens', price: 220.00, img: 'images/06.jpg' },
     { id: 7, name: 'Milano Suede Driver', brand: 'Milano', style: 'Chunky Loafers', gender: 'Mens', price: 195.00, img: 'images/07.jpg' },
     { id: 8, name: 'SunStep Beachcomber', brand: 'SunStep', style: 'Sandals', gender: 'Unisex', price: 65.50, img: 'images/08.jpg' },
@@ -77,7 +77,6 @@ async function render(container) {
     
     try {
         const rawTrendData = await callGeminiAPI('GET_ASSORTMENT_TRENDS');
-        // FIXED: Clean the response to remove markdown backticks
         const cleanedTrendData = rawTrendData.replace(/```json\n?|```/g, '');
         trendData = JSON.parse(cleanedTrendData);
     } catch (e) {
@@ -217,26 +216,51 @@ function renderProductGridItem(product) {
         </svg>
     </div>`;
 
-     return `
+    return `
         <div class="product-grid-item" data-product-id="${product.id}">
-            <div class="product-thumbnail">
-                <img src="${product.img}" alt="${product.name}">
-                <div class="image-hover-preview"><img src="${product.img}" alt="${product.name}"></div>
-            </div>
-            <div class="product-details">
-                <h4>${product.name}</h4>
-                <div class="specs">${product.brand}</div>
-                <div class="product-actions">
-                    <span class="price">$${product.price.toFixed(2)}</span>
-                    ${product.aiSuggestion ? aiIconSVG : ''}
+            <div class="product-card-content">
+                <div class="product-main-view">
+                    <div class="product-thumbnail">
+                        <img src="${product.img}" alt="${product.name}">
+                    </div>
+                    <div class="product-details">
+                        <h4>${product.name}</h4>
+                        <div class="specs">${product.brand}</div>
+                        <div class="product-actions">
+                            <span class="price">$${product.price.toFixed(2)}</span>
+                            ${product.aiSuggestion ? aiIconSVG : ''}
+                        </div>
+                    </div>
+                    <button class="add-to-plan-btn ${isAdded ? 'added' : ''}">
+                        ${isAdded ? '✓ Remove' : '+ Add to Plan'}
+                    </button>
+                </div>
+                <div class="product-expanded-details">
+                    <div class="expanded-info">
+                        <p><strong>SKU:</strong> ${product.sku || 'N/A'}</p>
+                        <p><strong>Cost:</strong> $${product.cost ? product.cost.toFixed(2) : 'N/A'}</p>
+                        <p><strong>Materials:</strong> ${product.materials || 'N/A'}</p>
+                    </div>
+                    <div class="expanded-options">
+                        <div class="sizes">
+                            <strong>Sizes:</strong>
+                            <div class="size-options">
+                                ${product.sizes ? product.sizes.map(s => `<span>${s}</span>`).join('') : 'Not Available'}
+                            </div>
+                        </div>
+                        <div class="colors">
+                            <strong>Colors:</strong>
+                            <div class="color-options">
+                                ${product.colors ? product.colors.map(c => `<span class="color-swatch" style="background-color:${c};"></span>`).join('') : 'Not Available'}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <button class="add-to-plan-btn ${isAdded ? 'added' : ''}">
-                ${isAdded ? '✓ Remove' : '+ Add to Plan'}
-            </button>
         </div>
     `;
 }
+
 
 function renderAllocationTable() {
     if (purchasePlan.length === 0) {
@@ -322,19 +346,19 @@ function handleExportExcelClick() {
     showToast('Purchase plan has been exported.');
 }
 
-// --- FIXED: Event listeners split into click, mouseover, mouseout ---
 function addEventListeners() {
     const mainContainer = document.getElementById('main-content-area');
     if (!mainContainer) return;
     
-    // CLICK listener
     mainContainer.addEventListener('click', (e) => {
         const addBtn = e.target.closest('.add-to-plan-btn');
         const acceptSugBtn = e.target.closest('#accept-ai-suggestions-btn');
         const exportBtn = e.target.closest('#export-excel-btn');
         const seeMoreBtn = e.target.closest('.see-more-trends-btn');
+        const productItem = e.target.closest('.product-grid-item');
+        const isActionableClick = e.target.closest('.add-to-plan-btn, .ai-suggestion-icon-wrapper, a, button');
 
-        if (addBtn) { // No longer check for 'disabled'
+        if (addBtn) {
             handleProductListClick(addBtn);
         } else if (acceptSugBtn) {
             handleAcceptAISuggestionsClick();
@@ -343,8 +367,9 @@ function addEventListeners() {
         } else if (seeMoreBtn) {
             const category = seeMoreBtn.dataset.category;
             showToast(`Showing all data for ${category} (Demo)`);
+        } else if (productItem && !isActionableClick) {
+            handleProductExpand(productItem);
         } else {
-            // If the click is not on the balloon, hide it
             const balloon = document.getElementById('ai-balloon-container');
             if (balloon && !balloon.contains(e.target)) {
                  hideBalloon();
@@ -352,7 +377,6 @@ function addEventListeners() {
         }
     });
 
-    // MOUSEOVER listener for AI icons
     mainContainer.addEventListener('mouseover', (e) => {
         const aiIcon = e.target.closest('.ai-suggestion-icon-wrapper');
         if (aiIcon) {
@@ -360,21 +384,27 @@ function addEventListeners() {
         }
     });
 
-    // MOUSEOUT listener for AI icons
     mainContainer.addEventListener('mouseout', (e) => {
         const aiIcon = e.target.closest('.ai-suggestion-icon-wrapper');
         if (aiIcon) {
             const balloon = document.getElementById('ai-balloon-container');
-            // Hide if mouse leaves icon AND is not entering the balloon
             if (!balloon || !balloon.contains(e.relatedTarget)) {
                 hideBalloon();
             }
         }
     });
 
-    // CHANGE listener for filters
     mainContainer.addEventListener('change', handleFilterChange);
 }
+
+function handleProductExpand(clickedItem) {
+    const currentlyExpanded = document.querySelector('.product-grid-item.expanded');
+    if (currentlyExpanded && currentlyExpanded !== clickedItem) {
+        currentlyExpanded.classList.remove('expanded');
+    }
+    clickedItem.classList.toggle('expanded');
+}
+
 
 function handleFilterChange(e) {
     const target = e.target;
@@ -386,20 +416,17 @@ function handleFilterChange(e) {
     }
 }
 
-// --- FIXED: Logic to handle both adding AND removing items ---
 function handleProductListClick(button) {
     const itemElement = button.closest('.product-grid-item');
     const productId = parseInt(itemElement.dataset.productId, 10);
     const productIndex = purchasePlan.findIndex(p => p.id === productId);
 
     if (productIndex > -1) {
-        // Product is in plan, so REMOVE it
         purchasePlan.splice(productIndex, 1);
         button.textContent = '+ Add to Plan';
         button.classList.remove('added');
         showToast('Product removed from plan.');
     } else {
-        // Product is NOT in plan, so ADD it
         const product = products.find(p => p.id === productId);
         if (product) {
             purchasePlan.push(product);
@@ -409,12 +436,10 @@ function handleProductListClick(button) {
         }
     }
     
-    // Re-render the allocation table and update button state
     document.getElementById('allocation-table-container').innerHTML = renderAllocationTable();
     updateAcceptAISuggestionsButtonState();
 }
 
-// --- FIXED: New helper function to manage button state ---
 function updateAcceptAISuggestionsButtonState() {
     const acceptBtn = document.getElementById('accept-ai-suggestions-btn');
     if (acceptBtn) {
@@ -422,17 +447,11 @@ function updateAcceptAISuggestionsButtonState() {
     }
 }
 
-// --- FIXED: Renamed to 'Hover' and logic corrected ---
 async function handleAISuggestionHover(iconWrapper) {
-    // If balloon is already showing for this icon, do nothing
     if (iconWrapper.classList.contains('is-showing-balloon')) {
         return;
     }
-
-    // Hide any other balloon that might be open
     hideBalloon(); 
-    
-    // Mark this icon as the one showing the balloon
     iconWrapper.classList.add('is-showing-balloon');
 
     const itemElement = iconWrapper.closest('.product-grid-item');
@@ -453,7 +472,6 @@ async function handleAISuggestionHover(iconWrapper) {
     const reasoning = await callGeminiAPI('ANALYZE_PRODUCT_SUGGESTION', { productName: product.name });
     const reasoningEl = document.getElementById('ai-reasoning-content');
     
-    // Check if the balloon is still visible and meant for this icon
     if (reasoningEl && iconWrapper.classList.contains('is-showing-balloon')) {
         reasoningEl.innerHTML = reasoning;
     }
@@ -475,3 +493,4 @@ function animateInfographics() {
 }
 
 export { render as init };
+

@@ -450,65 +450,81 @@ body {
 
 .product-grid-view {
     display: grid;
-    gap: 0.75rem;
-    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    padding-bottom: 220px; /* Space for last row to expand */
 }
 
-@media (min-width: 1024px) {
-    .product-grid-view {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-}
-
-/* New list item styling based on image */
+/* Placeholder to maintain grid structure. Height should match unexpanded card. */
 .product-grid-item {
+    position: relative;
+    /* Original card: 0.75rem padding (12px * 2) + 64px image height = 88px. Add buffer. */
+    height: 90px;
+    cursor: pointer;
+}
+
+/* Visual card that will expand */
+.product-card-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 90px; /* Match placeholder */
     background-color: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
-    padding: 0.75rem;
-    transition: box-shadow 0.2s, transform 0.2s;
+    padding: 0.75rem; /* Match original */
     display: flex;
-    align-items: center;
-    text-align: left;
+    flex-direction: column; 
+    overflow: hidden;
+    transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+    z-index: 1;
 }
 
-.product-grid-item:hover {
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+/* Hover effect on the placeholder */
+.product-grid-item:hover .product-card-content {
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px -1px rgba(0,0,0,0.1), 0 2px 8px -1px rgba(0,0,0,0.06);
+    border-color: #a5b4fc;
+}
+
+.product-main-view {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    flex-shrink: 0;
+}
+
+/* Styles for the expanded state */
+.product-grid-item.expanded .product-card-content {
+    height: 320px;
+    background-color: #f9fafb;
+    border-color: #6366f1;
+    z-index: 10; /* Bring to front */
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.2);
+    padding: 1rem; /* Slightly larger padding on expand */
 }
 
 .product-thumbnail {
     position: relative;
     flex-shrink: 0;
-    width: 64px;
-    height: 64px;
+    width: 64px; /* Match original */
+    height: 64px; /* Match original */
     margin-right: 1rem;
+    transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.product-grid-item.expanded .product-thumbnail {
+    align-self: flex-start;
+    width: 150px;
+    height: 150px;
 }
 
 .product-thumbnail img {
     width: 100%;
     height: 100%;
-    border-radius: 0.25rem;
+    border-radius: 0.5rem; 
     object-fit: cover;
-}
-
-.image-hover-preview {
-    display: none;
-    position: absolute;
-    top: 50%;
-    left: 100%;
-    transform: translate(1rem, -50%);
-    z-index: 10;
-    width: 200px;
-    height: 200px;
-    pointer-events: none;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    border-radius: 0.5rem;
-    overflow: hidden;
-}
-
-.product-thumbnail:hover .image-hover-preview {
-    display: block;
 }
 
 .product-details {
@@ -516,33 +532,54 @@ body {
 }
 
 .product-details h4 {
+    /* from original */
     font-size: 0.875rem;
     font-weight: 600;
     color: #1f2937;
     margin: 0;
     line-height: 1.2;
-    min-height: auto;
+    transition: font-size 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.product-grid-item.expanded .product-details h4 {
+    font-size: 1rem;
+    line-height: 1.4;
 }
 
 .specs {
     font-size: 0.75rem;
     color: #6b7280;
-    margin: 0;
+    margin-top: 0; 
 }
 
-.product-actions {
+.product-grid-item.expanded .specs {
     margin-top: 0.25rem;
+}
+
+
+.product-actions {
+    margin-top: 0.25rem; 
     display: flex;
     align-items: center;
 }
+
+.product-grid-item.expanded .product-actions {
+    margin-top: 0.5rem;
+}
+
 
 .price {
     font-size: 0.875rem;
     font-weight: 500;
     color: #111827;
+    transition: font-size 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
-/* AI Icon styles */
+.product-grid-item.expanded .price {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
 .ai-suggestion-icon-wrapper {
     position: relative;
     display: inline-flex;
@@ -562,7 +599,6 @@ body {
     transform: scale(1.1);
 }
 
-
 .add-to-plan-btn {
     margin-left: auto;
     flex-shrink: 0;
@@ -570,21 +606,79 @@ body {
     font-size: 0.875rem;
     font-weight: 500;
     border-radius: 0.375rem;
-    border: none;
-    background-color: transparent;
+    border: 1px solid #d1d5db;
+    background-color: #fff;
     color: #3b82f6;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
 }
 
 .add-to-plan-btn:hover:not(:disabled) {
     background-color: #eff6ff;
+    border-color: #3b82f6;
 }
 
 .add-to-plan-btn.added {
     color: #10b981;
-    cursor: not-allowed;
-    background-color: transparent;
+    background-color: #ecfdf5;
+    border-color: #10b981;
+}
+
+/* Expanded Details Styles */
+.product-expanded-details {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.4s ease-out 0.2s, transform 0.4s ease-out 0.2s, visibility 0s 0.6s;
+    padding-top: 1.25rem;
+    display: flex;
+    width: 100%;
+    gap: 1.5rem;
+}
+
+.product-grid-item.expanded .product-expanded-details {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: opacity 0.4s ease-out 0.2s, transform 0.4s ease-out 0.2s;
+}
+
+.expanded-info { flex-basis: 50%; }
+.expanded-options { flex-basis: 50%; }
+
+.expanded-info p, .expanded-options strong {
+    font-size: 0.875rem;
+    color: #4b5563;
+    margin-bottom: 0.5rem;
+}
+
+.size-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-bottom: 1rem;
+}
+
+.size-options span {
+    background: #e5e7eb;
+    border-radius: 99px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.color-options {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.color-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px #d1d5db;
 }
 
 
