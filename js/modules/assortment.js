@@ -77,9 +77,11 @@ async function render(container) {
     
     try {
         const rawTrendData = await callGeminiAPI('GET_ASSORTMENT_TRENDS');
-        trendData = JSON.parse(rawTrendData);
+        // Clean the response to remove markdown backticks
+        const cleanedTrendData = rawTrendData.replace(/```json\n?|```/g, '');
+        trendData = JSON.parse(cleanedTrendData);
     } catch (e) {
-        console.error("Failed to parse trend data:", e);
+        console.error("Failed to parse trend data:", e, "Raw data:", rawTrendData);
         container.innerHTML = `<p class="text-red-500">Error loading trend data. Please try again.</p>`;
         return;
     }
@@ -113,8 +115,8 @@ async function render(container) {
                 <div id="allocation-table-container">
                     ${renderAllocationTable()}
                 </div>
-                <div class="mt-6 text-right">
-                    <button id="export-excel-btn" class="flex items-center space-x-2 text-sm bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 ml-auto">
+                <div class="mt-6 text-center">
+                    <button id="export-excel-btn" class="flex items-center space-x-2 text-sm bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 mx-auto">
                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                        <span>Export to Excel</span>
                     </button>
@@ -128,11 +130,13 @@ async function render(container) {
 }
 
 function renderTrendInfographics() {
-    // ... same as before
     if (!trendData) return '<p>Trend data not available.</p>';
     const renderChart = (title, data, color) => `
         <div class="trend-infographic bg-white p-4 rounded-lg shadow-md flex flex-col justify-between">
-            <h3 class="font-semibold text-gray-600 mb-2">${title}</h3>
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-semibold text-gray-600">${title}</h3>
+                <button class="text-xs text-blue-500 hover:underline see-more-trends-btn" data-category="${title}">More</button>
+            </div>
             <div class="space-y-2">
             ${data.sort((a,b) => b.trendPercentage - a.trendPercentage).slice(0, 3).map(item => `
                 <div class="text-sm">
@@ -296,11 +300,12 @@ function addEventListeners() {
     const mainContainer = document.getElementById('main-content-area');
     if (!mainContainer) return;
     
+    // --- FIXED: Replaced click listener for AI icon with mouseover ---
     mainContainer.addEventListener('click', (e) => {
         const addBtn = e.target.closest('.add-to-plan-btn');
         const acceptSugBtn = e.target.closest('#accept-ai-suggestions-btn');
         const exportBtn = e.target.closest('#export-excel-btn');
-        const aiIcon = e.target.closest('.ai-suggestion-icon-wrapper');
+        const seeMoreBtn = e.target.closest('.see-more-trends-btn');
 
         if (addBtn && !addBtn.disabled) {
             handleProductListClick(addBtn);
@@ -308,14 +313,37 @@ function addEventListeners() {
             handleAcceptAISuggestionsClick();
         } else if (exportBtn) {
             handleExportExcelClick();
-        } else if (aiIcon) {
-            handleAISuggestionClick(aiIcon);
-        } else if (document.getElementById('ai-balloon-container')) {
-            // If clicking anywhere else, and the balloon exists, hide it.
+        } else if (seeMoreBtn) {
+            const category = seeMoreBtn.dataset.category;
+            showToast(`Showing all data for ${category} (Demo)`);
+        } else {
+            // This is a general click handler. If the click is not on a balloon, hide any open balloon.
             const balloon = document.getElementById('ai-balloon-container');
             if (balloon && !balloon.contains(e.target)) {
                  hideBalloon();
+                 const activeIcon = document.querySelector('.is-showing-balloon');
+                 if (activeIcon) activeIcon.classList.remove('is-showing-balloon');
             }
+        }
+    });
+    
+    // --- FIXED: Added mouseover listener ---
+    mainContainer.addEventListener('mouseover', (e) => {
+        const aiIcon = e.target.closest('.ai-suggestion-icon-wrapper');
+        if (aiIcon) {
+            handleAISuggestionClick(aiIcon);
+        }
+    });
+
+    // --- FIXED: Added mouseout listener ---
+    mainContainer.addEventListener('mouseout', (e) => {
+        const aiIcon = e.target.closest('.ai-suggestion-icon-wrapper');
+        const balloon = document.getElementById('ai-balloon-container');
+        
+        // Hide if mouse leaves icon AND is not entering the balloon
+        if (aiIcon && (!balloon || !balloon.contains(e.relatedTarget))) {
+            aiIcon.classList.remove('is-showing-balloon');
+            hideBalloon();
         }
     });
 
@@ -351,12 +379,19 @@ function handleProductListClick(button) {
     }
 }
 
+// --- FIXED: Updated logic to handle hover state ---
 async function handleAISuggestionClick(iconWrapper) {
-    // If a balloon is already showing, hide it and do nothing else.
-    if (document.getElementById('ai-balloon-container')) {
-        hideBalloon();
+    // If a balloon is already showing for this icon, do nothing.
+    if (iconWrapper.classList.contains('is-showing-balloon')) {
         return;
     }
+    
+    // Hide any other balloons that might be open
+    hideBalloon();
+    document.querySelectorAll('.is-showing-balloon').forEach(i => i.classList.remove('is-showing-balloon'));
+
+    // Mark this icon as active
+    iconWrapper.classList.add('is-showing-balloon');
 
     const itemElement = iconWrapper.closest('.product-grid-item');
     const productId = parseInt(itemElement.dataset.productId, 10);
@@ -375,7 +410,9 @@ async function handleAISuggestionClick(iconWrapper) {
 
     const reasoning = await callGeminiAPI('ANALYZE_PRODUCT_SUGGESTION', { productName: product.name });
     const reasoningEl = document.getElementById('ai-reasoning-content');
-    if (reasoningEl) {
+    
+    // Check if balloon is still supposed to be visible
+    if (reasoningEl && iconWrapper.classList.contains('is-showing-balloon')) {
         reasoningEl.innerHTML = reasoning;
     }
 }
@@ -388,4 +425,3 @@ function animateInfographics() {
 }
 
 export { render as init };
-

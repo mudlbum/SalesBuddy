@@ -1,5 +1,5 @@
 // --- AI SUGGESTION BALLOON ---
-const balloonContainer = document.getElementById('ai-suggestion-balloon-container');
+const balloonContainer = document.getElementById('ai-balloon-container');
 let hideBalloonTimeout;
 
 /**
@@ -26,6 +26,17 @@ function showBalloon(content, targetRect) {
     balloonContainer.style.top = `${top}px`;
     balloonContainer.style.left = `${left}px`;
     
+    // Clear any old listener
+    balloonContainer.onmouseleave = null;
+    // Add new listener to hide when mouse leaves balloon
+    balloonContainer.onmouseleave = () => {
+        const activeIcon = document.querySelector('.is-showing-balloon');
+        if (activeIcon) {
+            activeIcon.classList.remove('is-showing-balloon');
+        }
+        hideBalloon();
+    };
+    
     // Animate it in
     requestAnimationFrame(() => {
         balloonContainer.classList.add('visible');
@@ -41,7 +52,23 @@ function showBalloon(content, targetRect) {
 function hideBalloon() {
     if (!balloonContainer) return;
     
+    // Check if it's already hidden to avoid redundant calls
+    if (!balloonContainer.classList.contains('visible')) {
+        return;
+    }
+    
     balloonContainer.classList.remove('visible');
+    balloonContainer.onmouseleave = null; // Clean up listener
+
+    if (hideBalloonTimeout) {
+        clearTimeout(hideBalloonTimeout);
+    }
+    
+    // Also remove the active class from any icon
+    const activeIcon = document.querySelector('.is-showing-balloon');
+    if (activeIcon) {
+        activeIcon.classList.remove('is-showing-balloon');
+    }
 }
 
 
@@ -72,4 +99,3 @@ function showToast(message) {
 
 
 export { showToast, showBalloon, hideBalloon };
-

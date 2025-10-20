@@ -2,7 +2,7 @@
 
 // Use a reliable proxy to handle browser security (CORS)
 const PROXY_URL = 'https://cors-anywhere.herokuapp.com/';
-const API_BASE_URL = 'https://generativelace.googleapis.com';
+const API_BASE_URL = 'https://generativelanguage.googleapis.com'; // <-- FIXED: Was 'generativelace'
 
 const systemPrompts = {
     'AI Assistant': {
@@ -31,11 +31,11 @@ const systemPrompts = {
     },
      'GET_ASSORTMENT_TRENDS': {
         role: "user",
-        parts: [{ text: "Analyze current market data and provide a JSON object with upcoming seasonal trends for footwear. The object should have keys: 'brands', 'styles', 'colors', 'genders', 'pricePoints'. Each key should be an array of objects, with each object containing 'name' and 'trendPercentage' (a positive integer). Provide at least 4-5 items for each category." }]
+        parts: [{ text: "Analyze current market data and provide a JSON object with upcoming seasonal trends for footwear. The object should have keys: 'brands', 'styles', 'colors', 'genders', 'pricePoints'. Each key should be an array of objects, with each object containing 'name' and 'trendPercentage' (a positive integer). Provide at least 4-5 items for each category. Respond ONLY with the raw JSON object, without any markdown formatting." }]
     },
     'ANALYZE_PRODUCT_SUGGESTION': {
          role: "user",
-         parts: [{ text: "Analyze the product '{productName}' and provide a detailed recommendation. The response should be in HTML format. It must include a strength, a weakness, and an opportunity based on market data. Use bold tags for headers. Provide specific data points related to sales forecasts, market trends, and economic indicators." }]
+         parts: [{ text: "Analyze the product '{productName}' and provide a detailed recommendation. The response should be in HTML format. It must include a strength, a weakness, and an opportunity based on market data. Use bold tags for headers. Provide specific data points related to sales forecasts, market trends, and economic indicators. Do not use markdown." }]
     },
     'GET_STORE_ALLOCATION_INSIGHT': {
         role: "user",
@@ -77,7 +77,7 @@ const sampleResponses = {
 
 export async function callGeminiAPI(promptOrPersona, context = {}) {
     const apiKey = "AIzaSyBpGPcDZEzCA__dM4oT4_D_HAT0T_ctWbE"; // Will be handled by environment.
-    const urlPath = "/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
+    const urlPath = "/v1beta/models/gemini-2.5-flash:generateContent"; // <-- FIXED: Using your requested model path
     const apiUrl = `${PROXY_URL}${API_BASE_URL}${urlPath}`; // API key is now sent in the header
 
     let payload;
@@ -138,4 +138,3 @@ export async function callGeminiAPI(promptOrPersona, context = {}) {
         return "Sorry, there was an error connecting to the AI service.";
     }
 }
-
