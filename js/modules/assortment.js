@@ -72,7 +72,7 @@ let currentFilters = {
     aiSuggestion: false
 };
 let budget = {
-    total: 250000,
+    total: 1250000,
     spent: 0
 };
 
