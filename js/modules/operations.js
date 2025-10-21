@@ -7,11 +7,15 @@ let tasks = [
     { id: 3, task: "Finalize and publish the weekly staff schedule.", assignedTo: "Jane D.", status: "To Do", dueDate: "2025-10-21", source: "AI-generated from HR module", priority: "High" },
     { id: 4, task: "Confirm receipt of marketing materials for 'Velocity' promo.", assignedTo: "John S.", status: "To Do", dueDate: "2025-10-22", source: "AI-flagged from HQ Buyer chat", priority: "Medium" },
     { id: 5, task: "Stockroom light flickering reported.", assignedTo: "System", status: "Completed", dueDate: "2025-10-19", source: "Maintenance Log", priority: "Low" },
-    { id: 6, task: "Process return for defective Milano Loafer (RMA-0122).", assignedTo: "Alice B.", status: "To Do", dueDate: "2025-10-21", source: "AI-flagged from Logistics module", priority: "Medium" }
+    { id: 6, task: "Process return for defective Milano Loafer (RMA-0122).", assignedTo: "Alice B.", status: "To Do", dueDate: "2025-10-21", source: "AI-flagged from Logistics module", priority: "Medium" },
+    { id: 7, task: "Review previous day's inventory discrepancies.", assignedTo: "John S.", status: "To Do", dueDate: "2025-10-19", source: "System", priority: "Medium" } // Task from yesterday to demonstrate rollover
 ];
 
 // Key is YYYY-MM-DD. Value is an array of task objects with planner-specific properties.
 let plannerTasks = {
+    "2025-10-19": [ // Yesterday
+        { ...tasks.find(t => t.id === 7), plannerId: "7-1", startTime: "15:00", duration: 1.5 }
+    ],
     "2025-10-20": [
         { ...tasks.find(t => t.id === 1), plannerId: "1-1", startTime: "10:00", duration: 2 }, // 10am for 2 hours
         { ...tasks.find(t => t.id === 2), plannerId: "2-1", startTime: "16:00", duration: 1 }  // 4pm for 1 hour
@@ -26,11 +30,56 @@ let plannerTasks = {
 };
 
 let currentFilters = { assignedTo: 'all', priority: 'all' };
+const DEMO_TODAY = new Date('2025-10-20T12:00:00Z');
 const HOUR_HEIGHT = 50; // Corresponds to h-12 in Tailwind + borders
 
 // --- RENDER FUNCTIONS ---
 
+/**
+ * Automatically moves incomplete tasks from past days to the current day in the planner.
+ */
+function rolloverIncompleteTasks() {
+    const todayStr = DEMO_TODAY.toISOString().slice(0, 10);
+    if (!plannerTasks[todayStr]) {
+        plannerTasks[todayStr] = [];
+    }
+    let movedCount = 0;
+
+    for (const dateStr in plannerTasks) {
+        if (dateStr < todayStr) {
+            const tasksToMove = [];
+            const remainingTasks = [];
+
+            plannerTasks[dateStr].forEach(pTask => {
+                const mainTask = tasks.find(t => t.id === pTask.id);
+                if (mainTask && mainTask.status !== 'Completed') {
+                    tasksToMove.push({
+                        ...pTask,
+                        startTime: "09:00", // Move to start of day
+                        duration: 1, // Reset duration
+                        originalDate: dateStr
+                    });
+                } else {
+                    remainingTasks.push(pTask);
+                }
+            });
+
+            if (tasksToMove.length > 0) {
+                plannerTasks[todayStr].unshift(...tasksToMove); // Add to the beginning of today's tasks
+                plannerTasks[dateStr] = remainingTasks; // Keep completed tasks on their original day
+                movedCount += tasksToMove.length;
+            }
+        }
+    }
+    if (movedCount > 0) {
+        // Use a timeout to ensure the toast appears after the initial load animation
+        setTimeout(() => showToast(`${movedCount} incomplete task(s) automatically moved to today.`), 100);
+    }
+}
+
+
 function render(container) {
+    rolloverIncompleteTasks();
     container.innerHTML = `
         <div class="space-y-6 operations-module">
             <div>
@@ -41,7 +90,7 @@ function render(container) {
             <div class="bg-white p-4 rounded-lg shadow">
                  <h3 class="font-semibold mb-3 text-gray-800 flex items-center">
                     <svg class="w-5 h-5 mr-2 text-blue-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.5C12.41 2.5 12.75 2.84 12.75 3.25V4.75C12.75 5.16 12.41 5.5 12 5.5C11.59 5.5 11.25 5.16 11.25 4.75V3.25C11.25 2.84 11.59 2.5 12 2.5Z" fill="currentColor"/><path d="M18.04 5.96C18.33 5.67 18.8 5.67 19.09 5.96C19.38 6.25 19.38 6.72 19.09 7.01L17.99 8.11C17.7 8.4 17.23 8.4 16.94 8.11C16.65 7.82 16.65 7.35 16.94 7.06L18.04 5.96Z" fill="currentColor"/><path d="M5.96 5.96C6.25 5.67 6.72 5.67 7.01 5.96L8.11 7.06C8.4 7.35 8.4 7.82 8.11 8.11C7.82 8.4 7.35 8.4 7.06 8.11L5.96 7.01C5.67 6.72 5.67 6.25 5.96 5.96Z" fill="currentColor"/><path d="M21.5 12C21.5 11.59 21.16 11.25 20.75 11.25L19.25 11.25C18.84 11.25 18.5 11.59 18.5 12C18.5 12.41 18.84 12.75 19.25 12.75L20.75 12.75C21.16 12.75 21.5 12.41 21.5 12Z" fill="currentColor"/><path d="M4.75 11.25C5.16 11.25 5.5 11.59 5.5 12C5.5 12.41 5.16 12.75 4.75 12.75L3.25 12.75C2.84 12.75 2.5 12.41 2.5 12C2.5 11.59 2.84 11.25 3.25 11.25L4.75 11.25Z" fill="currentColor"/><path d="M12 10.5C14.49 10.5 16.5 12.51 16.5 15V17.5C16.5 18.05 16.05 18.5 15.5 18.5H8.5C7.95 18.5 7.5 18.05 7.5 17.5V15C7.5 12.51 9.51 10.5 12 10.5ZM12 9C8.69 9 6 11.69 6 15V17.5C6 18.88 7.12 20 8.5 20H15.5C16.88 20 18 18.88 18 17.5V15C18 11.69 15.31 9 12 9Z" fill="currentColor"/></svg>
-                    AI Priority Briefing for ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    AI Priority Briefing for ${DEMO_TODAY.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                  </h3>
                  <p class="text-sm text-gray-700">Good morning, Jane. Your high-priority focus today should be resolving the <strong>delayed shipment</strong> with Logistics to prevent stockouts. Also, the <strong>weekly schedule</strong> needs to be published by tomorrow.</p>
             </div>
@@ -167,7 +216,7 @@ function getWeekDays() {
 
 function renderWeeklyPlanner() {
     const weekDays = getWeekDays();
-    const today = new Date('2025-10-20T12:00:00Z');
+    const today = DEMO_TODAY;
     const hours = Array.from({ length: 10 }, (_, i) => 9 + i); // 9 AM to 6 PM
 
     return `
@@ -212,14 +261,13 @@ function renderPlannerTask(task) {
     const [startHour, startMinute] = task.startTime.split(':').map(Number);
     const top = ((startHour - 9) * 60 + startMinute) / 60 * HOUR_HEIGHT;
     const height = task.duration * HOUR_HEIGHT - 4; // -4 for padding/border
-
-    return `
+    
+    const taskHtml = `
         <div class="planner-task ${isCompleted ? 'completed' : ''}" 
              draggable="true"
              data-planner-id="${task.plannerId}" 
              data-task-id="${task.id}"
              style="top: ${top}px; height: ${height}px; background-color: ${priorityColors.hex_bg}; border-left: 3px solid ${priorityColors.hex};">
-            ${isCompleted ? '<span class="completed-check">✓</span>' : ''}
             <div class="planner-task-content">
                 <p class="font-semibold truncate">${task.task}</p>
                 <p class="text-gray-600">${task.assignedTo}</p>
@@ -227,6 +275,7 @@ function renderPlannerTask(task) {
             <div class="resize-handle"></div>
         </div>
     `;
+    return taskHtml;
 }
 
 // --- EVENT LISTENERS & HANDLERS ---
@@ -469,5 +518,17 @@ function showAddTaskModal() {
     document.getElementById('add-task-form').addEventListener('submit', handleAddTaskSubmit);
 }
 
-export { render as init };
 
+function addTask(taskDetails) {
+    const newTask = {
+        id: Date.now(),
+        status: 'To Do',
+        source: 'AI Chat',
+        ...taskDetails
+    };
+    tasks.unshift(newTask);
+    return newTask;
+}
+
+
+export { render as init, addTask, reRenderTaskBoard };

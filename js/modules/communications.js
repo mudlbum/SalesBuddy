@@ -1,4 +1,6 @@
 import { callGeminiAPI } from '../api.js';
+import { addTask, reRenderTaskBoard as reRenderOpsBoard } from './operations.js';
+import { showToast } from '../utils.js';
 
 // --- STATE MANAGEMENT ---
 const conversationHistories = {};
@@ -52,9 +54,13 @@ function initializeAllConversations() {
         const isActive = pill.classList.contains('active');
 
         if (!conversationHistories[persona]) {
+            let welcomeMessage = `Hello! I'm the ${persona}. How can I assist you today?`;
+            if (persona === 'AI Assistant') {
+                welcomeMessage = "Hello! I'm SalesBuddy. I can help you manage tasks, get insights, and more. How can I help?";
+            }
             conversationHistories[persona] = [{
                 role: "assistant",
-                parts: [{ text: `Hello! I'm the ${persona}. How can I assist you today?` }]
+                parts: [{ text: welcomeMessage }]
             }];
         }
         
@@ -188,6 +194,38 @@ async function handleSendMessage() {
     const messageText = chatInput.value.trim();
     if (messageText === '') return;
 
+    // Command Parsing for task creation
+    const lowerCaseMessage = messageText.toLowerCase();
+    if ((lowerCaseMessage.startsWith("create task") || lowerCaseMessage.startsWith("add task") || lowerCaseMessage.startsWith("new task")) && currentPersona === 'AI Assistant') {
+        const taskDescription = messageText.replace(/^(create task|add task|new task)\s*(to)?\s*/i, '');
+
+        if (taskDescription) {
+            const newTask = addTask({
+                task: taskDescription.charAt(0).toUpperCase() + taskDescription.slice(1),
+                assignedTo: 'Jane D.', // Default for demo
+                dueDate: new Date().toISOString().slice(0, 10),
+                priority: 'Medium'
+            });
+            
+            addMessageToChat(messageText, 'sent');
+            const confirmation = `Okay, I've added the task: "${newTask.task}". You can see it in the Operations module.`;
+            addMessageToChat(confirmation, 'received');
+            
+            if (window.location.hash.substring(1) === 'operations') {
+                reRenderOpsBoard(newTask.id);
+            } else {
+                showToast("New task created in Operations module!");
+            }
+            
+            conversationHistories[currentPersona].push({ role: 'user', parts: [{ text: messageText }]});
+            conversationHistories[currentPersona].push({ role: 'assistant', parts: [{ text: confirmation }]});
+
+            chatInput.value = '';
+            scrollToBottom();
+            return; 
+        }
+    }
+
     // Add user message to history and UI
     if (!conversationHistories[currentPersona]) {
         conversationHistories[currentPersona] = [];
@@ -197,15 +235,17 @@ async function handleSendMessage() {
     chatInput.value = '';
     scrollToBottom();
 
-    const receivingPersona = currentPersona; // Capture the persona at the time of sending
+    const receivingPersona = currentPersona;
     const loadingBubble = addMessageToChat('', 'received-loading');
+    
+    // Get current module for contextual responses
+    const currentModuleId = window.location.hash.substring(1) || 'assortment-planning';
 
     try {
-        const responseText = await callGeminiAPI(receivingPersona, conversationHistories[receivingPersona]);
+        const responseText = await callGeminiAPI(receivingPersona, conversationHistories[receivingPersona], { moduleId: currentModuleId });
         
         conversationHistories[receivingPersona].push({ role: 'assistant', parts: [{ text: responseText }] });
         
-        // Only update the bubble if the user is still in the same conversation
         if (receivingPersona === currentPersona) {
              loadingBubble.classList.remove('received-loading');
              loadingBubble.innerHTML = responseText;
@@ -231,7 +271,7 @@ function addMessageToChat(text, type) {
     if (type === 'received-loading') {
         bubble.innerHTML = `<div class="spinner-dots-small"><div></div><div></div><div></div></div>`;
     } else {
-        bubble.innerHTML = text; // Use innerHTML to allow for formatting like lists
+        bubble.innerHTML = text;
     }
     
     chatWindow.appendChild(bubble);
@@ -242,7 +282,19 @@ function scrollToBottom() {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
+function triggerProactiveMessage(message, persona = 'AI Assistant') {
+    if (!conversationHistories[persona]) {
+        conversationHistories[persona] = [];
+    }
+    // Avoid adding duplicate proactive messages
+    if (conversationHistories[persona].some(m => m.parts[0].text === message && m.role === 'assistant')) {
+        return;
+    }
+
+    conversationHistories[persona].push({ role: 'assistant', parts: [{ text: message }] });
+    setConversationAsUnread(persona);
+}
+
 
 // --- EXPORT ---
-export { init };
-
+export { init, triggerProactiveMessage };

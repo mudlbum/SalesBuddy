@@ -149,6 +149,14 @@ async function loadModule(moduleId) {
 
     try {
         selectedModule.module.init(mainContentArea);
+
+        // Proactive Chat Trigger Logic
+        if (moduleId === 'operations') {
+            setTimeout(() => {
+                Communications.triggerProactiveMessage("Hi Jane. I see the task to review yesterday's inventory is incomplete. I've moved it to today's planner for you.", 'AI Assistant');
+            }, 2500);
+        }
+
     } catch (error) {
         console.error(`Error loading module ${moduleId}:`, error);
         mainContentArea.innerHTML = `<div class="text-center text-red-500">Error loading module. Check console.</div>`;
@@ -364,4 +372,3 @@ document.addEventListener('DOMContentLoaded', () => {
     handleHashChange();
     Communications.init();
 });
-

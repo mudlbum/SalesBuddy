@@ -78,7 +78,7 @@ function render(container) {
                      <h3 class="font-semibold">Weekly Schedule: Oct 13 - Oct 19</h3>
                      <div>
                         <button id="time-off-requests-btn" class="text-sm bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300">Time Off Requests (2)</button>
-                        <button id="publish-schedule-btn" class="text-sm bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600">Publish Schedule</button>
+                        <button id="publish-schedule-btn" class="text-sm bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600">Request Schedule Approval</button>
                      </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -164,7 +164,7 @@ function addHrEventListeners() {
     document.getElementById('add-employee-btn')?.addEventListener('click', showAddEmployeeModal);
     document.getElementById('time-off-requests-btn')?.addEventListener('click', showTimeOffRequestsModal);
     document.getElementById('publish-schedule-btn')?.addEventListener('click', () => {
-        showToast('Weekly schedule has been published to all employees.');
+        showToast('Schedule sent to regional manager for approval.');
     });
 }
 

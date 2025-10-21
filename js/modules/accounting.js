@@ -270,11 +270,17 @@ function showReviewPayrollModal() {
             </div>
             <div class="text-right pt-2 space-x-2">
                  <button class="bg-gray-200 text-gray-800 py-2 px-5 rounded-lg hover:bg-gray-300">Request Changes</button>
-                 <button class="bg-green-600 text-white py-2 px-5 rounded-lg hover:bg-green-700">Approve Payroll</button>
+                 <button id="request-payroll-approval-btn" class="bg-green-600 text-white py-2 px-5 rounded-lg hover:bg-green-700">Request Final Approval</button>
             </div>
         </div>
     `;
     showModal('Review & Approve Payroll', modalBody);
+    
+    // Add event listener for the new button inside the modal
+    document.getElementById('request-payroll-approval-btn').addEventListener('click', () => {
+        showToast('Payroll submitted to HQ for final authorization.');
+        document.querySelector('#modal-close-btn').click(); // Close the modal
+    });
 }
 
 export { render as init };

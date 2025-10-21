@@ -2,7 +2,7 @@
 
 // Use a reliable proxy to handle browser security (CORS)
 const PROXY_URL = 'https://cors-anywhere.herokuapp.com/';
-const API_BASE_URL = 'https://generativelanguage.googleapis.com'; // <-- FIXED: Was 'generativelace'
+const API_BASE_URL = 'https://generativelanguage.googleapis.com';
 
 const systemPrompts = {
     'AI Assistant': {
@@ -28,6 +28,27 @@ const systemPrompts = {
     'Accounting Manager': {
         role: "system",
         parts: [{ text: "You are the company's accounting manager, speaking with a store manager. Your communication style is precise and detail-oriented. You discuss topics like invoice statuses, budget reports, and payroll deadlines." }]
+    },
+     // --- NEW CONTEXTUAL PROMPTS for the AI Assistant ---
+    'assortment-planning': {
+        role: "system",
+        parts: [{ text: "You are SalesBuddy, an AI assistant for a retail manager viewing the 'Assortment Planning' module. Be concise and focus on trends, products, and purchase planning. You can explain the data on screen and offer suggestions for store allocation based on trends." }]
+    },
+    'accounting': {
+        role: "system",
+        parts: [{ text: "You are SalesBuddy, an AI assistant for a retail manager viewing the 'Accounting' module. Be precise and focus on KPIs, invoices, expenses, and payroll. Explain financial terms simply." }]
+    },
+    'logistics': {
+        role: "system",
+        parts: [{ text: "You are SalesBuddy, an AI assistant for a retail manager viewing the 'Logistics' module. Be direct and focus on inventory, shipping, and returns. You can provide status updates on orders or explain logistics terms." }]
+    },
+    'hr': {
+        role: "system",
+        parts: [{ text: "You are SalesBuddy, an AI assistant for a retail manager viewing the 'HR & Scheduling' module. Be helpful and focus on staffing, schedules, and performance. You cannot approve requests yourself, but you can guide the user on how to do it." }]
+    },
+    'operations': {
+        role: "system",
+        parts: [{ text: "You are SalesBuddy, an AI assistant for a retail manager viewing the 'Operation Tasks' module. Your primary function is to help manage the store's to-do list. You can create new tasks via chat (e.g., 'create a task to call the electrician'), explain existing tasks, and help the manager prioritize their day based on the tasks shown." }]
     },
      'GET_ASSORTMENT_TRENDS': {
         role: "user",
@@ -75,26 +96,32 @@ const sampleResponses = {
 };
 
 
-export async function callGeminiAPI(promptOrPersona, context = {}) {
-    const apiKey = "AIzaSyBpGPcDZEzCA__dM4oT4_D_HAT0T_ctWbE"; // Will be handled by environment.
-    const urlPath = "/v1beta/models/gemini-2.5-flash:generateContent"; // <-- FIXED: Using your requested model path
-    const apiUrl = `${PROXY_URL}${API_BASE_URL}${urlPath}`; // API key is now sent in the header
+export async function callGeminiAPI(promptOrPersona, chatHistory = [], metadata = {}) {
+    const apiKey = "AIzaSyCh9hgOOi_sCezHGHJo8Wb3xQkuQTEE9Zs"; 
+    const urlPath = "/v1beta/models/gemini-2.5-flash:generateContent";
+    const apiUrl = `${PROXY_URL}${API_BASE_URL}${urlPath}`;
 
     let payload;
+    let systemInstruction = systemPrompts[promptOrPersona];
 
-    // Chat-based request
-    if (systemPrompts[promptOrPersona] && systemPrompts[promptOrPersona].role === 'system') {
+    // Context Switching Logic: If it's the AI Assistant, check for a more specific module prompt.
+    if (promptOrPersona === 'AI Assistant' && metadata.moduleId && systemPrompts[metadata.moduleId]) {
+        systemInstruction = systemPrompts[metadata.moduleId];
+    }
+
+    // Chat-based request using a system prompt
+    if (systemInstruction && systemInstruction.role === 'system') {
         payload = {
-            contents: context, // context is the chat history
-            systemInstruction: systemPrompts[promptOrPersona]
+            contents: chatHistory,
+            systemInstruction: systemInstruction
         };
-    } else { // Tool-based request
+    } else { // Tool-based request (e.g., GET_ASSORTMENT_TRENDS)
         let promptText = systemPrompts[promptOrPersona]?.parts[0]?.text || "Provide a helpful response.";
-        if (promptOrPersona === 'ANALYZE_PRODUCT_SUGGESTION' && context.productName) {
-            promptText = promptText.replace('{productName}', context.productName);
+        if (promptOrPersona === 'ANALYZE_PRODUCT_SUGGESTION' && metadata.productName) {
+            promptText = promptText.replace('{productName}', metadata.productName);
         }
-        if (promptOrPersona === 'GET_STORE_ALLOCATION_INSIGHT' && context.productName && context.storeName) {
-            promptText = promptText.replace('{productName}', context.productName).replace('{storeName}', context.storeName);
+        if (promptOrPersona === 'GET_STORE_ALLOCATION_INSIGHT' && metadata.productName && metadata.storeName) {
+            promptText = promptText.replace('{productName}', metadata.productName).replace('{storeName}', metadata.storeName);
         }
         payload = { contents: [{ role: "user", parts: [{ text: promptText }] }] };
     }
@@ -104,8 +131,8 @@ export async function callGeminiAPI(promptOrPersona, context = {}) {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json', 
-                'X-goog-api-key': apiKey, // Sending API key as a header
-                'X-Requested-With': 'XMLHttpRequest' // Header for cors-anywhere proxy
+                'X-goog-api-key': apiKey,
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify(payload)
         });
@@ -128,10 +155,10 @@ export async function callGeminiAPI(promptOrPersona, context = {}) {
         // Provide a sample response on failure
         if (sampleResponses[promptOrPersona]) {
              if (promptOrPersona === 'ANALYZE_PRODUCT_SUGGESTION') {
-                return sampleResponses[promptOrPersona](context.productName);
+                return sampleResponses[promptOrPersona](metadata.productName);
             }
             if (promptOrPersona === 'GET_STORE_ALLOCATION_INSIGHT') {
-                return sampleResponses[promptOrPersona](context.productName, context.storeName);
+                return sampleResponses[promptOrPersona](metadata.productName, metadata.storeName);
             }
             return sampleResponses[promptOrPersona]();
         }

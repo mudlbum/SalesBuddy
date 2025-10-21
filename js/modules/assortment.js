@@ -71,6 +71,10 @@ let currentFilters = {
     gender: 'all',
     aiSuggestion: false
 };
+let budget = {
+    total: 250000,
+    spent: 0
+};
 
 async function render(container) {
     container.innerHTML = `<div class="flex justify-center items-center h-full"><div class="spinner"></div><span class="ml-4">Loading Assortment Planner...</span></div>`;
@@ -92,6 +96,10 @@ async function render(container) {
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                     ${renderTrendInfographics()}
                 </div>
+            </section>
+            
+             <section id="budget-dashboard" class="bg-white p-4 rounded-lg shadow-md">
+                ${renderBudgetSection()}
             </section>
             
             <section id="product-catalog">
@@ -126,6 +134,7 @@ async function render(container) {
 
     addEventListeners();
     animateInfographics();
+    updateBudgetDisplay();
 }
 
 function renderTrendInfographics() {
@@ -161,6 +170,38 @@ function renderTrendInfographics() {
                 <svg class="w-16 h-16 text-yellow-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                 <p class="font-bold mt-2">Warm & Dry</p>
                 <p class="text-xs text-gray-500">Focus on breathable materials.</p>
+            </div>
+        </div>
+    `;
+}
+
+function renderBudgetSection() {
+    return `
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <h3 class="text-xl font-bold text-gray-800">Seasonal Budget</h3>
+            <button id="request-budget-increase-btn" class="text-sm bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600">Request Budget Increase</button>
+        </div>
+        <div class="mt-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                <div>
+                    <div class="text-sm text-gray-500">Total Budget</div>
+                    <div id="budget-total" class="text-2xl font-bold text-gray-800">$${budget.total.toLocaleString()}</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500">Plan Cost</div>
+                    <div id="budget-plan-cost" class="text-2xl font-bold text-blue-600">$0</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500">Spent</div>
+                    <div id="budget-spent" class="text-2xl font-bold text-red-600">$0</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500">Remaining</div>
+                    <div id="budget-remaining" class="text-2xl font-bold text-green-600">$${budget.total.toLocaleString()}</div>
+                </div>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-4 mt-4">
+                <div id="budget-progress-bar" class="bg-blue-600 h-4 rounded-full" style="width: 0%"></div>
             </div>
         </div>
     `;
@@ -274,7 +315,7 @@ function renderAllocationTable() {
                 <td class="p-1 text-center">
                     <div class="allocation-cell">
                          <span class="ai-quantity-suggestion">AI: ${Math.floor(Math.random() * 20) + 5}</span>
-                        <input type="number" class="w-20 text-center border rounded-md p-1" placeholder="0" data-store-id="${store.id}" data-product-id="${p.id}">
+                        <input type="number" class="w-20 text-center border rounded-md p-1 allocation-input" placeholder="0" data-store-id="${store.id}" data-product-id="${p.id}" data-cost="${p.cost}">
                     </div>
                 </td>
             `).join('')}
@@ -312,6 +353,7 @@ function handleAcceptAISuggestionsClick() {
         }
     });
     showToast('All AI suggestions have been applied.');
+    updateBudgetDisplay();
 }
 
 function handleExportExcelClick() {
@@ -356,6 +398,7 @@ function addEventListeners() {
         const exportBtn = e.target.closest('#export-excel-btn');
         const seeMoreBtn = e.target.closest('.see-more-trends-btn');
         const productItem = e.target.closest('.product-grid-item');
+        const budgetReqBtn = e.target.closest('#request-budget-increase-btn');
         const isActionableClick = e.target.closest('.add-to-plan-btn, .ai-suggestion-icon-wrapper, a, button');
 
         if (addBtn) {
@@ -367,6 +410,8 @@ function addEventListeners() {
         } else if (seeMoreBtn) {
             const category = seeMoreBtn.dataset.category;
             showToast(`Showing all data for ${category} (Demo)`);
+        } else if (budgetReqBtn) {
+            showToast('Budget increase request sent to management for approval.');
         } else if (productItem && !isActionableClick) {
             handleProductExpand(productItem);
         } else {
@@ -391,6 +436,12 @@ function addEventListeners() {
             if (!balloon || !balloon.contains(e.relatedTarget)) {
                 hideBalloon();
             }
+        }
+    });
+    
+    moduleContainer.addEventListener('input', (e) => {
+        if (e.target.matches('.allocation-input')) {
+            updateBudgetDisplay();
         }
     });
 
@@ -438,7 +489,42 @@ function handleProductListClick(button) {
     
     document.getElementById('allocation-table-container').innerHTML = renderAllocationTable();
     updateAcceptAISuggestionsButtonState();
+    updateBudgetDisplay();
 }
+
+function calculatePlanCost() {
+    const allocationTable = document.getElementById('allocation-table-container');
+    if (!allocationTable) return 0;
+    
+    const inputs = allocationTable.querySelectorAll('.allocation-input');
+    let totalCost = 0;
+    inputs.forEach(input => {
+        const quantity = parseInt(input.value, 10) || 0;
+        const cost = parseFloat(input.dataset.cost) || 0;
+        totalCost += quantity * cost;
+    });
+    return totalCost;
+}
+
+function updateBudgetDisplay() {
+    const planCost = calculatePlanCost();
+    const remaining = budget.total - planCost;
+    const percentage = (planCost / budget.total) * 100;
+    
+    document.getElementById('budget-plan-cost').textContent = `$${planCost.toLocaleString()}`;
+    document.getElementById('budget-remaining').textContent = `$${remaining.toLocaleString()}`;
+    document.getElementById('budget-progress-bar').style.width = `${percentage}%`;
+
+    const remainingEl = document.getElementById('budget-remaining');
+    if (remaining < 0) {
+        remainingEl.classList.remove('text-green-600');
+        remainingEl.classList.add('text-red-600');
+    } else {
+        remainingEl.classList.add('text-green-600');
+        remainingEl.classList.remove('text-red-600');
+    }
+}
+
 
 function updateAcceptAISuggestionsButtonState() {
     const acceptBtn = document.getElementById('accept-ai-suggestions-btn');
@@ -493,4 +579,3 @@ function animateInfographics() {
 }
 
 export { render as init };
-
