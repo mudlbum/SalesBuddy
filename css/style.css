@@ -452,7 +452,7 @@ body {
     display: grid;
     gap: 1rem;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    padding-bottom: 290px; /* Space for last row to expand */
+    padding-bottom: 220px; /* Space for last row to expand */
 }
 
 /* Placeholder to maintain grid structure. Height should match unexpanded card. */
@@ -497,7 +497,7 @@ body {
 
 /* Styles for the expanded state */
 .product-grid-item.expanded .product-card-content {
-    height: 380px;
+    height: 350px;
     background-color: #f9fafb;
     border-color: #6366f1;
     z-index: 10; /* Bring to front */
@@ -700,6 +700,177 @@ body {
     border: 1px solid #bae6fd;
 }
 
+/* --- Operations Task Styles --- */
+.task-column .task-list {
+    min-height: 150px; /* Ensure drop zone is always present */
+}
+
+.task-column.drag-over {
+    background-color: #eef2ff;
+    border: 2px dashed #a5b4fc;
+}
+.task-card {
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+    cursor: grab;
+}
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px -1px rgba(0,0,0,0.1), 0 2px 8px -1px rgba(0,0,0,0.06);
+}
+.task-card.dragging, .planner-task.dragging {
+    opacity: 0.5;
+    transform: rotate(3deg);
+}
+
+.task-card-new {
+    animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes pop-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+
+/* --- Planner Styles --- */
+.planner-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.planner-header {
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr);
+    text-align: center;
+    font-size: 0.875rem;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.planner-day-header {
+    padding: 0.5rem 0.25rem;
+    font-weight: 500;
+}
+
+.planner-day-header.is-today {
+    background-color: #eff6ff;
+}
+
+.planner-day-header .date-number {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    border-radius: 9999px;
+    margin-top: 0.25rem;
+}
+
+.planner-day-header.is-today .date-number {
+    background-color: #3b82f6;
+    color: #fff;
+}
+
+.planner-body-container {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    overflow-x: auto;
+}
+
+.time-labels {
+    font-size: 0.75rem;
+    color: #6b7280;
+    border-right: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+}
+
+.time-label {
+    height: 50px; /* Corresponds to HOUR_HEIGHT */
+    text-align: center;
+    padding-right: 0.5rem;
+    border-bottom: 1px dashed #e5e7eb;
+}
+
+.time-label:last-child {
+    border-bottom: none;
+}
+
+.planner-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(140px, 1fr));
+    flex-grow: 1;
+}
+
+.planner-day-body {
+    position: relative;
+    height: 500px; /* 10 hours * 50px/hour */
+    background-image: linear-gradient(to bottom, #f3f4f6 1px, transparent 1px);
+    background-size: 100% 50px;
+    border-right: 1px solid #e5e7eb;
+}
+
+.planner-day-body:last-child {
+    border-right: none;
+}
+
+.planner-day-body.drag-over {
+    background-color: #dbeafe;
+}
+
+.planner-task {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    border-radius: 4px;
+    font-size: 11px;
+    overflow: hidden;
+    cursor: grab;
+    transition: opacity 0.3s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    z-index: 10;
+}
+
+.planner-task:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+    z-index: 15;
+}
+
+.planner-task-content {
+    padding: 4px 6px;
+    pointer-events: none; /* Make sure drag events target the parent */
+}
+
+.planner-task.completed {
+    opacity: 0.6;
+}
+.planner-task.completed .planner-task-content p {
+    text-decoration: line-through;
+}
+.completed-check {
+    color: #16a34a; /* green-600 */
+    font-weight: bold;
+    margin-right: 4px;
+}
+.resize-handle {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    cursor: ns-resize;
+}
+body.resizing {
+    cursor: ns-resize;
+    user-select: none;
+}
+
+
 /* --- Account Menu Styles --- */
 #account-menu-container button {
     border-radius: 9999px;
@@ -771,3 +942,4 @@ input:checked + .toggle-slider {
 input:checked + .toggle-slider:before {
     transform: translateX(16px);
 }
+

@@ -1,7 +1,6 @@
 import { showModal, showToast } from '../utils.js';
 
 // --- STATE MANAGEMENT ---
-// This simulates a dynamic list of tasks.
 let tasks = [
     { id: 1, task: "Follow up with Logistics on delayed TrekWise boots (Order #89339).", assignedTo: "Jane D.", status: "In Progress", dueDate: "2025-10-20", source: "AI-flagged from Logistics chat", priority: "High" },
     { id: 2, task: "Prepare end-of-day sales report for Accounting.", assignedTo: "John S.", status: "To Do", dueDate: "2025-10-20", source: "Recurring daily task", priority: "Medium" },
@@ -11,15 +10,23 @@ let tasks = [
     { id: 6, task: "Process return for defective Milano Loafer (RMA-0122).", assignedTo: "Alice B.", status: "To Do", dueDate: "2025-10-21", source: "AI-flagged from Logistics module", priority: "Medium" }
 ];
 
-// Stores tasks that are dragged onto the planner. Key is YYYY-MM-DD date string.
+// Key is YYYY-MM-DD. Value is an array of task objects with planner-specific properties.
 let plannerTasks = {
-    "2025-10-20": [tasks[0]] // Pre-populate with one task for demo
+    "2025-10-20": [
+        { ...tasks.find(t => t.id === 1), plannerId: "1-1", startTime: "10:00", duration: 2 }, // 10am for 2 hours
+        { ...tasks.find(t => t.id === 2), plannerId: "2-1", startTime: "16:00", duration: 1 }  // 4pm for 1 hour
+    ],
+    "2025-10-21": [
+        { ...tasks.find(t => t.id === 3), plannerId: "3-1", startTime: "09:00", duration: 3 }, // 9am for 3 hours
+        { ...tasks.find(t => t.id === 6), plannerId: "6-1", startTime: "14:00", duration: 2 } // 2pm for 2 hours
+    ],
+    "2025-10-22": [
+        { ...tasks.find(t => t.id === 4), plannerId: "4-1", startTime: "11:00", duration: 1.5 } // 11am for 1.5 hours
+    ]
 };
 
-let currentFilters = {
-    assignedTo: 'all',
-    priority: 'all'
-};
+let currentFilters = { assignedTo: 'all', priority: 'all' };
+const HOUR_HEIGHT = 50; // Corresponds to h-12 in Tailwind + borders
 
 // --- RENDER FUNCTIONS ---
 
@@ -40,7 +47,7 @@ function render(container) {
             </div>
 
             <!-- Weekly Planner -->
-            <div id="weekly-planner-container">
+            <div id="weekly-planner-container" class="bg-white p-4 rounded-lg shadow">
                 <h3 class="text-xl font-bold text-gray-800 mb-4">Weekly Planner</h3>
                 ${renderWeeklyPlanner()}
             </div>
@@ -118,10 +125,10 @@ function renderTaskColumns() {
 
 function getPriorityClass(priority) {
     switch (priority) {
-        case 'High': return { border: 'border-l-red-500', bg: 'bg-red-500' };
-        case 'Medium': return { border: 'border-l-yellow-500', bg: 'bg-yellow-500' };
-        case 'Low': return { border: 'border-l-blue-500', bg: 'bg-blue-500' };
-        default: return { border: 'border-l-gray-300', bg: 'bg-gray-300' };
+        case 'High': return { cardBorder: 'border-l-red-500', hex: '#ef4444', hex_bg: '#fee2e2' };
+        case 'Medium': return { cardBorder: 'border-l-yellow-500', hex: '#f59e0b', hex_bg: '#fef3c7' };
+        case 'Low': return { cardBorder: 'border-l-blue-500', hex: '#3b82f6', hex_bg: '#dbeafe' };
+        default: return { cardBorder: 'border-l-gray-300', hex: '#6b7280', hex_bg: '#f3f4f6' };
     }
 }
 
@@ -129,7 +136,7 @@ function renderTaskCard(task) {
     const isCompleted = task.status === 'Completed';
     const priorityClasses = getPriorityClass(task.priority);
     return `
-        <div class="task-card bg-white p-3 rounded-md shadow-sm border-l-4 ${priorityClasses.border} ${isCompleted ? 'opacity-60' : ''}" draggable="true" data-task-id="${task.id}">
+        <div class="task-card bg-white p-3 rounded-md shadow-sm border-l-4 ${priorityClasses.cardBorder} ${isCompleted ? 'opacity-60' : ''}" draggable="true" data-task-id="${task.id}">
             <p class="font-medium text-sm mb-2 ${isCompleted ? 'line-through' : ''}">${task.task}</p>
             <div class="text-xs text-gray-500 space-y-1">
                 <div class="flex items-center justify-between">
@@ -150,40 +157,49 @@ function renderTaskCard(task) {
 
 // --- PLANNER RENDER FUNCTIONS ---
 function getWeekDays() {
-    // For this demo, the date is fixed to the week of Oct 20, 2025
     const startOfWeek = new Date('2025-10-20T12:00:00Z');
-    const week = [];
-    for (let i = 0; i < 7; i++) {
+    return Array.from({ length: 7 }, (_, i) => {
         const day = new Date(startOfWeek);
         day.setDate(day.getDate() + i);
-        week.push(day);
-    }
-    return week;
+        return day;
+    });
 }
 
 function renderWeeklyPlanner() {
     const weekDays = getWeekDays();
-    const today = new Date('2025-10-20T12:00:00Z'); // Fixed for demo
+    const today = new Date('2025-10-20T12:00:00Z');
+    const hours = Array.from({ length: 10 }, (_, i) => 9 + i); // 9 AM to 6 PM
 
     return `
-        <div class="grid grid-cols-7 gap-2 text-center text-sm">
-            ${weekDays.map(day => {
-                const dateString = day.toISOString().slice(0, 10);
-                const isToday = day.toDateString() === today.toDateString();
-                const dayTasks = plannerTasks[dateString] || [];
-
-                return `
-                    <div class="planner-day bg-gray-50 rounded-lg p-2" data-date="${dateString}">
-                        <div class="planner-day-header font-semibold ${isToday ? 'text-blue-600' : 'text-gray-600'}">
-                            <p>${day.toLocaleDateString('en-US', { weekday: 'short' })}</p>
-                            <p class="${isToday ? 'bg-blue-600 text-white' : 'bg-gray-200'} rounded-full w-6 h-6 flex items-center justify-center mx-auto">${day.getDate()}</p>
-                        </div>
-                        <div class="planner-task-list mt-2 space-y-2">
+        <div class="planner-container">
+            <div class="planner-header">
+                <div class="header-offset"></div>
+                ${weekDays.map(day => {
+                    const isToday = day.toDateString() === today.toDateString();
+                    return `
+                    <div class="planner-day-header ${isToday ? 'is-today' : ''}">
+                        <span>${day.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                        <span class="date-number">${day.getDate()}</span>
+                    </div>
+                    `
+                }).join('')}
+            </div>
+            <div class="planner-body-container">
+                <div class="time-labels">
+                    ${hours.map(h => `<div class="time-label">${h}:00</div>`).join('')}
+                </div>
+                <div class="planner-days-grid">
+                    ${weekDays.map(day => {
+                        const dateString = day.toISOString().slice(0, 10);
+                        const dayTasks = plannerTasks[dateString] || [];
+                        return `
+                        <div class="planner-day-body" data-date="${dateString}">
                             ${dayTasks.map(renderPlannerTask).join('')}
                         </div>
-                    </div>
-                `
-            }).join('')}
+                        `
+                    }).join('')}
+                </div>
+            </div>
         </div>
     `;
 }
@@ -191,17 +207,27 @@ function renderWeeklyPlanner() {
 function renderPlannerTask(task) {
     const originalTask = tasks.find(t => t.id === task.id);
     const isCompleted = originalTask && originalTask.status === 'Completed';
-    const priorityClasses = getPriorityClass(task.priority);
+    const priorityColors = getPriorityClass(task.priority);
+    
+    const [startHour, startMinute] = task.startTime.split(':').map(Number);
+    const top = ((startHour - 9) * 60 + startMinute) / 60 * HOUR_HEIGHT;
+    const height = task.duration * HOUR_HEIGHT - 4; // -4 for padding/border
 
     return `
-        <div class="planner-task text-left p-1.5 rounded-md text-xs ${isCompleted ? 'completed' : ''}" style="background-color: ${priorityClasses.bg.replace('bg-', '#')}20; border-left: 3px solid ${priorityClasses.bg.replace('bg-', '#')}80;">
+        <div class="planner-task ${isCompleted ? 'completed' : ''}" 
+             draggable="true"
+             data-planner-id="${task.plannerId}" 
+             data-task-id="${task.id}"
+             style="top: ${top}px; height: ${height}px; background-color: ${priorityColors.hex_bg}; border-left: 3px solid ${priorityColors.hex};">
             ${isCompleted ? '<span class="completed-check">✓</span>' : ''}
-            <p class="font-semibold truncate">${task.task}</p>
-            <p class="text-gray-600">${task.assignedTo}</p>
+            <div class="planner-task-content">
+                <p class="font-semibold truncate">${task.task}</p>
+                <p class="text-gray-600">${task.assignedTo}</p>
+            </div>
+            <div class="resize-handle"></div>
         </div>
     `;
 }
-
 
 // --- EVENT LISTENERS & HANDLERS ---
 
@@ -210,85 +236,151 @@ function addOperationsEventListeners() {
     if (!moduleContainer) return;
 
     moduleContainer.addEventListener('click', (e) => {
-        if (e.target.closest('#add-task-btn')) {
-            showAddTaskModal();
-        }
+        if (e.target.closest('#add-task-btn')) showAddTaskModal();
     });
     
     moduleContainer.addEventListener('change', (e) => {
-        if (e.target.matches('.filter-select')) {
-            handleFilterChange(e);
-        }
+        if (e.target.matches('.filter-select')) handleFilterChange(e);
     });
 
     // Drag and Drop listeners
-    let draggedItemId = null;
+    let draggedInfo = null;
     
     moduleContainer.addEventListener('dragstart', (e) => {
-        if (e.target.classList.contains('task-card')) {
-            draggedItemId = e.target.dataset.taskId;
+        if (e.target.matches('.task-card, .planner-task')) {
             setTimeout(() => e.target.classList.add('dragging'), 0);
+            
+            const isPlannerTask = e.target.classList.contains('planner-task');
+            draggedInfo = {
+                taskId: e.target.dataset.taskId,
+                isPlannerTask: isPlannerTask,
+                plannerId: isPlannerTask ? e.target.dataset.plannerId : null,
+                originalDate: isPlannerTask ? e.target.closest('.planner-day-body').dataset.date : null
+            };
         }
     });
     
     moduleContainer.addEventListener('dragend', (e) => {
-        if (e.target.classList.contains('task-card')) {
-            e.target.classList.remove('dragging');
-            draggedItemId = null;
+        if (draggedInfo) {
+            const draggingElement = moduleContainer.querySelector('.dragging');
+            if(draggingElement) draggingElement.classList.remove('dragging');
+            draggedInfo = null;
         }
     });
 
     moduleContainer.addEventListener('dragover', (e) => {
         e.preventDefault();
-        const column = e.target.closest('.task-column, .planner-day');
+        const column = e.target.closest('.task-column, .planner-day-body');
         if (column) {
+            // Clear previous drag-over states
+            moduleContainer.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
             column.classList.add('drag-over');
         }
     });
     
      moduleContainer.addEventListener('dragleave', (e) => {
-        const column = e.target.closest('.task-column, .planner-day');
+        const column = e.target.closest('.task-column, .planner-day-body');
         if (column) {
-           column.classList.remove('drag-over');
+            column.classList.remove('drag-over');
         }
     });
 
     moduleContainer.addEventListener('drop', (e) => {
         e.preventDefault();
-        const dropTarget = e.target.closest('.task-column, .planner-day');
-        if (!dropTarget || !draggedItemId) return;
+        const dropTarget = e.target.closest('.task-column, .planner-day-body');
+        if (dropTarget) dropTarget.classList.remove('drag-over');
+        if (!dropTarget || !draggedInfo) return;
 
-        dropTarget.classList.remove('drag-over');
-        const task = tasks.find(t => t.id == draggedItemId);
+        const task = tasks.find(t => t.id == draggedInfo.taskId);
         if (!task) return;
 
-        // Dropped on a task column
+        // Handle moving task to a new status column
         if (dropTarget.classList.contains('task-column')) {
-            const newStatus = dropTarget.dataset.status;
+            const newStatus = dropTarget.closest('.task-column').dataset.status;
             if (task.status !== newStatus) {
                 task.status = newStatus;
                 showToast(`Task moved to "${newStatus}"`);
                 reRenderTaskBoard();
-                reRenderPlanner(); // Re-render planner to show completed status
-            }
-        }
-        // Dropped on a planner day
-        else if (dropTarget.classList.contains('planner-day')) {
-            const dateString = dropTarget.dataset.date;
-            if (!plannerTasks[dateString]) {
-                plannerTasks[dateString] = [];
-            }
-            // Avoid adding duplicates
-            if (!plannerTasks[dateString].some(t => t.id === task.id)) {
-                plannerTasks[dateString].push(task);
-                showToast(`Task added to planner for ${dateString}`);
                 reRenderPlanner();
-            } else {
-                 showToast(`Task is already on the planner for this day.`);
             }
+        } 
+        // Handle dropping on the planner
+        else if (dropTarget.classList.contains('planner-day-body')) {
+            const newDateString = dropTarget.dataset.date;
+            let movedTaskData;
+            
+            // If it was a planner task, find it, remove it from the old array, and store its data
+            if (draggedInfo.isPlannerTask) {
+                const oldDate = draggedInfo.originalDate;
+                if (plannerTasks[oldDate]) {
+                    const taskIndex = plannerTasks[oldDate].findIndex(t => t.plannerId === draggedInfo.plannerId);
+                    if (taskIndex > -1) {
+                        movedTaskData = plannerTasks[oldDate][taskIndex];
+                        plannerTasks[oldDate].splice(taskIndex, 1);
+                    }
+                }
+            } else { // It's a new task from the board
+                movedTaskData = { ...task, duration: 1 };
+            }
+
+            if (!movedTaskData) return;
+            
+            const dropY = e.offsetY;
+            const hour = Math.floor(dropY / HOUR_HEIGHT) + 9;
+            const minutes = Math.round((dropY % HOUR_HEIGHT) / HOUR_HEIGHT * 4) * 15;
+            const newStartTime = `${String(hour).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            
+            movedTaskData.startTime = newStartTime;
+            movedTaskData.plannerId = movedTaskData.plannerId || `${task.id}-${Date.now()}`;
+            
+            if (!plannerTasks[newDateString]) plannerTasks[newDateString] = [];
+            plannerTasks[newDateString].push(movedTaskData);
+
+            showToast(`Task scheduled for ${newDateString} at ${newStartTime}`);
+            reRenderPlanner();
+        }
+    });
+
+    // Planner task resizing
+    let resizingTask = null;
+    let startY = 0;
+    let startHeight = 0;
+
+    moduleContainer.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('resize-handle')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const taskElement = e.target.closest('.planner-task');
+            const plannerId = taskElement.dataset.plannerId;
+            const dateString = taskElement.closest('.planner-day-body').dataset.date;
+
+            resizingTask = plannerTasks[dateString].find(t => t.plannerId === plannerId);
+            startY = e.pageY;
+            startHeight = taskElement.offsetHeight;
+            document.body.classList.add('resizing');
+        }
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!resizingTask) return;
+        const dy = e.pageY - startY;
+        const newHeight = Math.max(HOUR_HEIGHT / 2, startHeight + dy);
+        
+        const newDuration = Math.round((newHeight / HOUR_HEIGHT) * 2) / 2; // Snap to 30 mins
+        if (resizingTask.duration !== newDuration) {
+            resizingTask.duration = newDuration;
+            reRenderPlanner();
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (resizingTask) {
+            resizingTask = null;
+            document.body.classList.remove('resizing');
         }
     });
 }
+
 
 function handleFilterChange(e) {
     const filterType = e.target.dataset.filter;
@@ -308,10 +400,10 @@ function handleAddTaskSubmit(e) {
         source: 'Manual Entry',
         priority: formData.get('task-priority')
     };
-    tasks.unshift(newTask); // Add to the beginning of the array
+    tasks.unshift(newTask);
     reRenderTaskBoard(newTask.id);
     showToast(`Task "${newTask.task.substring(0, 20)}..." was added.`);
-    document.querySelector('#modal-close-btn').click(); // Close modal
+    document.querySelector('#modal-close-btn').click();
 }
 
 function reRenderTaskBoard(newItemId = null) {
@@ -320,9 +412,7 @@ function reRenderTaskBoard(newItemId = null) {
         board.innerHTML = renderTaskColumns();
         if (newItemId) {
             const newTaskCard = board.querySelector(`[data-task-id="${newItemId}"]`);
-            if (newTaskCard) {
-                newTaskCard.classList.add('task-card-new');
-            }
+            if (newTaskCard) newTaskCard.classList.add('task-card-new');
         }
     }
 }
@@ -330,10 +420,15 @@ function reRenderTaskBoard(newItemId = null) {
 function reRenderPlanner() {
     const plannerContainer = document.getElementById('weekly-planner-container');
     if(plannerContainer) {
-        plannerContainer.innerHTML = `
-            <h3 class="text-xl font-bold text-gray-800 mb-4">Weekly Planner</h3>
-            ${renderWeeklyPlanner()}
-        `;
+        const grid = plannerContainer.querySelector('.planner-container');
+        if (grid) {
+            grid.outerHTML = renderWeeklyPlanner();
+        } else {
+             plannerContainer.innerHTML = `
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Weekly Planner</h3>
+                ${renderWeeklyPlanner()}
+            `;
+        }
     }
 }
 
