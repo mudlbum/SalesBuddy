@@ -273,7 +273,7 @@ function renderProductGridItem(product) {
                         </div>
                     </div>
                     <button class="add-to-plan-btn ${isAdded ? 'added' : ''}">
-                        ${isAdded ? '✓ Remove' : '+ Add to Plan'}
+                        ${isAdded ? '✓ Remove' : '+ Add'}
                     </button>
                 </div>
                 <div class="product-expanded-details">
@@ -474,7 +474,7 @@ function handleProductListClick(button) {
 
     if (productIndex > -1) {
         purchasePlan.splice(productIndex, 1);
-        button.textContent = '+ Add to Plan';
+        button.textContent = '+ Add';
         button.classList.remove('added');
         showToast('Product removed from plan.');
     } else {
