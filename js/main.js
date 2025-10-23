@@ -15,13 +15,28 @@ const accountMenuContainer = document.getElementById('account-menu-container');
 const accountMenuButton = document.getElementById('account-menu-button');
 const accountMenu = document.getElementById('account-menu');
 const menuUsername = document.getElementById('menu-username');
-const settingsMenuBtn = document.getElementById('settings-menu-btn');
-const settingsBackBtn = document.getElementById('settings-back-btn');
-const accountMenuMainView = document.getElementById('account-menu-main-view');
-const accountMenuSettingsView = document.getElementById('account-menu-settings-view');
-const moduleSettingsContainer = document.getElementById('module-settings-container');
+const menuUserRole = document.getElementById('menu-user-role');
 const logoutBtn = document.getElementById('logout-btn');
 const uploadBtn = document.getElementById('upload-file-btn');
+
+// Menu Views
+const accountMenuMainView = document.getElementById('account-menu-main-view');
+const accountMenuSettingsView = document.getElementById('account-menu-settings-view');
+const accountMenuProfileView = document.getElementById('account-menu-profile-view');
+
+// Profile View Elements
+const profileMenuBtn = document.getElementById('profile-menu-btn');
+const profileBackBtn = document.getElementById('profile-back-btn');
+const userRoleSelect = document.getElementById('user-role-select');
+const menuProfilePicture = document.getElementById('menu-profile-picture');
+const menuProfileUsername = document.getElementById('menu-profile-username');
+
+// Settings View Elements
+const settingsMenuBtn = document.getElementById('settings-menu-btn');
+const settingsBackBtn = document.getElementById('settings-back-btn');
+const themeToggle = document.getElementById('theme-toggle');
+const notificationsToggle = document.getElementById('notifications-toggle');
+
 
 // --- MODULE DEFINITIONS ---
 const modules = [
@@ -32,67 +47,54 @@ const modules = [
     { id: 'operations', title: 'Operation Tasks', icon: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>`, module: Operations }
 ];
 
+// --- ROLE-BASED ACCESS CONTROL (RBAC) ---
+const ROLE_PERMISSIONS = {
+    'CS Admin': ['assortment-planning', 'accounting', 'logistics', 'hr', 'operations'],
+    'CEO': ['assortment-planning', 'accounting', 'logistics', 'hr', 'operations'],
+    'Assortment Planner': ['assortment-planning', 'operations'],
+    'Accounting': ['accounting', 'operations'],
+    'Logistics Manager': ['logistics', 'operations'],
+    'HR Manager': ['hr', 'operations'],
+    'CS Manager': ['logistics', 'operations'],
+    'IT Manager': ['operations']
+};
+
 
 // --- FUNCTIONS ---
 
 /**
- * Loads module activity settings from localStorage.
- * @returns {object} An object with module IDs as keys and boolean values.
+ * Gets the current user role from sessionStorage.
+ * @returns {string} The current user role.
  */
-function loadModuleSettings() {
-    try {
-        const settings = localStorage.getItem('moduleSettings');
-        if (settings) {
-            return JSON.parse(settings);
-        }
-    } catch (e) {
-        console.error("Could not parse module settings from localStorage", e);
-    }
-    // Default: all modules are on if no settings are found
-    const defaultSettings = {};
-    modules.forEach(m => {
-        defaultSettings[m.id] = true;
-    });
-    return defaultSettings;
+function getUserRole() {
+    return sessionStorage.getItem('userRole') || 'CS Admin'; // Default role
 }
 
 /**
- * Saves module activity settings to localStorage.
- * @param {object} settings - An object with module IDs as keys and boolean values.
+ * Saves the user role to sessionStorage.
+ * @param {string} role - The role to save.
  */
-function saveModuleSettings(settings) {
-    try {
-        localStorage.setItem('moduleSettings', JSON.stringify(settings));
-    } catch (e) {
-        console.error("Could not save module settings to localStorage", e);
-    }
+function saveUserRole(role) {
+    sessionStorage.setItem('userRole', role);
 }
 
 /**
- * Renders the toggle switches for module settings inside the account menu.
+ * Gets the list of module IDs allowed for the current role.
+ * @returns {string[]} Array of allowed module IDs.
  */
-function renderModuleSettings() {
-    if (!moduleSettingsContainer) return;
-    const settings = loadModuleSettings();
-    moduleSettingsContainer.innerHTML = modules.map(m => `
-        <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-800">${m.title}</span>
-            <label class="toggle-switch">
-                <input type="checkbox" data-module-id="${m.id}" ${settings[m.id] ? 'checked' : ''}>
-                <span class="toggle-slider"></span>
-            </label>
-        </div>
-    `).join('');
+function getAllowedModules() {
+    const role = getUserRole();
+    return ROLE_PERMISSIONS[role] || [];
 }
 
 /**
- * Renders the sidebar icons based on the modules array and saved settings.
+ * Renders the sidebar icons based on the user's role permissions.
  */
 function renderSidebar() {
     if (!sidebarIcons) return;
     
-    const settings = loadModuleSettings();
-    const visibleModules = modules.filter(m => settings[m.id]);
+    const allowedModuleIds = getAllowedModules();
+    const visibleModules = modules.filter(m => allowedModuleIds.includes(m.id));
 
     sidebarIcons.innerHTML = visibleModules.map(m => `
         <button data-module-id="${m.id}" title="${m.title}" class="sidebar-icon p-4 w-full flex justify-center items-center focus:outline-none">
@@ -104,12 +106,14 @@ function renderSidebar() {
     const isCurrentModuleVisible = visibleModules.some(m => m.id === currentModuleId);
 
     if (currentModuleId && !isCurrentModuleVisible && visibleModules.length > 0) {
+        // If current module is no longer allowed, go to the first allowed one
         window.location.hash = visibleModules[0].id;
     } else if (visibleModules.length === 0) {
-        mainContentArea.innerHTML = `<div class="text-center p-8 text-gray-600">No modules are active. You can enable them in the account settings menu.</div>`;
-        moduleTitle.textContent = "No Active Modules";
+        mainContentArea.innerHTML = `<div class="text-center p-8 text-gray-600">Your role does not have access to any modules. Please contact an administrator.</div>`;
+        moduleTitle.textContent = "No Access";
         document.querySelectorAll('.sidebar-icon').forEach(icon => icon.classList.remove('active'));
     } else {
+        // Highlight the active icon
         document.querySelectorAll('.sidebar-icon').forEach(icon => {
             icon.classList.toggle('active', icon.dataset.moduleId === currentModuleId);
         });
@@ -118,15 +122,18 @@ function renderSidebar() {
 
 
 /**
- * Loads the specified module into the main content area.
+ * Loads the specified module into the main content area, checking permissions.
  * @param {string} moduleId - The ID of the module to load.
  */
 async function loadModule(moduleId) {
-    const settings = loadModuleSettings();
-    if (!moduleId || !settings[moduleId]) {
-         const visibleModules = modules.filter(m => settings[m.id]);
-         if (visibleModules.length > 0) {
-             window.location.hash = visibleModules[0].id;
+    const allowedModuleIds = getAllowedModules();
+    
+    // Default to first allowed module if none is specified or if current is disallowed
+    if (!moduleId || !allowedModuleIds.includes(moduleId)) {
+         if (allowedModuleIds.length > 0) {
+             window.location.hash = allowedModuleIds[0];
+         } else {
+             renderSidebar(); // This will show the "No Access" message
          }
          return;
     }
@@ -178,43 +185,59 @@ function handleSidebarClick(e) {
  * Handles the URL hash change event to load the correct module.
  */
 function handleHashChange() {
-    const settings = loadModuleSettings();
-    const visibleModules = modules.filter(m => settings[m.id]);
+    const allowedModuleIds = getAllowedModules();
     let moduleId = window.location.hash.substring(1);
 
-    if (!moduleId || !settings[moduleId]) {
-        moduleId = visibleModules.length > 0 ? visibleModules[0].id : null;
+    if (!moduleId || !allowedModuleIds.includes(moduleId)) {
+        moduleId = allowedModuleIds.length > 0 ? allowedModuleIds[0] : null;
     }
     
-    if (moduleId) {
-        loadModule(moduleId);
-    } else {
-        renderSidebar();
-    }
+    loadModule(moduleId);
 }
 
 
 /**
- * Initializes the user display (profile picture and menu username).
+ * Initializes the user display (profile picture, menu username, role).
  */
 function initializeUser() {
-    const user = sessionStorage.getItem('loggedInUser');
-    if (user && userProfilePicture) {
+    const user = sessionStorage.getItem('loggedInUser') || "manager@softmoc.com";
+    const role = getUserRole();
+    
+    let initials = 'SM';
+    if (user) {
         const parts = user.split('@')[0].replace(/[^a-zA-Z]/g, ' ').split(' ');
-        let initials = parts.length > 1 
+        initials = parts.length > 1 
             ? parts[0].charAt(0) + parts[parts.length - 1].charAt(0)
             : parts[0].substring(0, 2);
         initials = initials.toUpperCase();
-        
-        userProfilePicture.src = `https://placehold.co/100x100/3B82F6/FFFFFF?text=${initials}`;
-        if(menuUsername) {
-            menuUsername.textContent = user;
-        }
-    } else if (userProfilePicture) {
-        userProfilePicture.src = "https://placehold.co/100x100/3B82F6/FFFFFF?text=SM";
-        if(menuUsername) {
-            menuUsername.textContent = "manager@softmoc.com";
-        }
+    }
+    
+    const profilePicSrc = `https://placehold.co/100x100/3B82F6/FFFFFF?text=${initials}`;
+    
+    // Main header icon
+    if (userProfilePicture) {
+        userProfilePicture.src = profilePicSrc;
+    }
+    
+    // Main menu view
+    if (menuUsername) {
+        menuUsername.textContent = user;
+    }
+    if (menuUserRole) {
+        menuUserRole.textContent = role;
+    }
+    
+    // Profile menu view
+    if (menuProfilePicture) {
+        menuProfilePicture.src = profilePicSrc;
+    }
+    if (menuProfileUsername) {
+        menuProfileUsername.textContent = user;
+    }
+    
+    // Set dropdown to correct role
+    if (userRoleSelect) {
+        userRoleSelect.value = role;
     }
 }
 
@@ -223,9 +246,11 @@ function initializeUser() {
  */
 function toggleAccountMenu() {
     const isHidden = accountMenu.classList.toggle('hidden');
+    // Reset to main view when opening
     if (!isHidden) {
         accountMenuMainView.classList.remove('hidden');
         accountMenuSettingsView.classList.add('hidden');
+        accountMenuProfileView.classList.add('hidden');
     }
 }
 
@@ -315,8 +340,9 @@ function showUploadModal() {
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     if (!sessionStorage.getItem('loggedInUser')) {
-        window.location.href = 'index.html';
-        return; 
+        // Set default user and role if none is logged in (for demo purposes)
+        sessionStorage.setItem('loggedInUser', 'manager@softmoc.com');
+        sessionStorage.setItem('userRole', 'CS Admin');
     }
     
     initializeUser();
@@ -338,37 +364,63 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleAccountMenu();
         }
     });
+    
+    // Profile View Listeners
+    profileMenuBtn.addEventListener('click', () => {
+        accountMenuMainView.classList.add('hidden');
+        accountMenuProfileView.classList.remove('hidden');
+    });
 
+    profileBackBtn.addEventListener('click', () => {
+        accountMenuProfileView.classList.add('hidden');
+        accountMenuMainView.classList.remove('hidden');
+    });
+    
+    userRoleSelect.addEventListener('change', (e) => {
+        const newRole = e.target.value;
+        saveUserRole(newRole);
+        initializeUser(); // Update menu text
+        renderSidebar();    // Update visible icons
+        handleHashChange(); // Reload module or redirect
+        showToast(`Role changed to ${newRole}.`);
+    });
+
+    // Settings View Listeners
     settingsMenuBtn.addEventListener('click', () => {
         accountMenuMainView.classList.add('hidden');
         accountMenuSettingsView.classList.remove('hidden');
-        renderModuleSettings();
     });
 
     settingsBackBtn.addEventListener('click', () => {
         accountMenuSettingsView.classList.add('hidden');
         accountMenuMainView.classList.remove('hidden');
     });
-
-    moduleSettingsContainer.addEventListener('change', (e) => {
-        if (e.target.matches('input[type="checkbox"]')) {
-            const moduleId = e.target.dataset.moduleId;
-            const isEnabled = e.target.checked;
-            const settings = loadModuleSettings();
-            settings[moduleId] = isEnabled;
-            saveModuleSettings(settings);
-            renderSidebar();
-            handleHashChange();
+    
+    themeToggle.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            document.body.classList.add('dark');
+            showToast('Dark Mode enabled.');
+        } else {
+            document.body.classList.remove('dark');
+            showToast('Light Mode enabled.');
+        }
+    });
+    
+    notificationsToggle.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            showToast('Notifications enabled.');
+        } else {
+            showToast('Notifications disabled.');
         }
     });
 
     logoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
         sessionStorage.removeItem('loggedInUser');
-        localStorage.removeItem('moduleSettings');
+        sessionStorage.removeItem('userRole'); // Clear role on logout
         window.location.href = 'index.html';
     });
     
-    handleHashChange();
+    handleHashChange(); // Load initial module based on hash or role
     Communications.init();
 });

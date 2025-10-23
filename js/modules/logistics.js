@@ -1,5 +1,23 @@
 import { showModal, showToast } from '../utils.js';
 
+// --- Sample Location Data ---
+const locations = [
+    { id: 'WH-GTA', name: 'GTA Distribution Center', type: 'Warehouse', lat: 43.8561, lng: -79.3370, // Approx. Richmond Hill
+      details: { capacity: '85%', inbound: 5, outbound: 12, issues: 'Minor delay (Weather)' } },
+    { id: 'S1001', name: 'Toronto Store #1 (Eaton Centre)', type: 'Store', lat: 43.6544, lng: -79.3807,
+      details: { inventoryValue: '$250,580', stockAlerts: 2, nextDelivery: 'Oct 24, AM' } },
+    { id: 'S1002', name: 'Vancouver Store #1 (Pacific Centre)', type: 'Store', lat: 49.2827, lng: -123.1207,
+      details: { inventoryValue: '$310,210', stockAlerts: 0, nextDelivery: 'Oct 25, PM' } },
+    { id: 'S1003', name: 'Montreal Store #1 (Centre Eaton)', type: 'Store', lat: 45.5039, lng: -73.5714,
+      details: { inventoryValue: '$195,800', stockAlerts: 1, nextDelivery: 'Oct 24, AM' } },
+    { id: 'S1004', name: 'Calgary Store #1 (CORE Shopping)', type: 'Store', lat: 51.0454, lng: -114.0631,
+      details: { inventoryValue: '$220,150', stockAlerts: 0, nextDelivery: 'Oct 25, EOD' } },
+    { id: 'S1005', name: 'Toronto Store #2 (Yorkdale)', type: 'Store', lat: 43.7256, lng: -79.4522,
+      details: { inventoryValue: '$285,400', stockAlerts: 3, nextDelivery: 'Oct 24, AM' } },
+];
+
+let mapInstance = null; // To hold the map instance
+
 function render(container) {
     container.innerHTML = `
         <div class="space-y-8">
@@ -25,6 +43,13 @@ function render(container) {
                     </div>
                 </div>
             </div>
+
+            <!-- 5. Location Map (New Section) -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-semibold mb-4">Network Overview Map</h3>
+                <div id="logistics-map" class="h-96 rounded-lg"></div> <!-- Map container -->
+            </div>
+
 
             <!-- 2. Inventory Management -->
             <div class="bg-white p-4 rounded-lg shadow">
@@ -92,7 +117,7 @@ function render(container) {
                     </table>
                 </div>
             </div>
-            
+
             <!-- 3. Order & Warehouse Management -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-white p-4 rounded-lg shadow">
@@ -155,7 +180,7 @@ function render(container) {
                     </div>
                 </div>
             </div>
-            
+
             <!-- 4. Transportation Management -->
              <div class="bg-white p-4 rounded-lg shadow">
                 <h3 class="font-semibold mb-4">Ready for Shipment</h3>
@@ -202,11 +227,77 @@ function render(container) {
         </div>
     `;
     addLogisticsEventListeners();
+    // Initialize map after elements are in the DOM
+    setTimeout(initMap, 0);
 }
+
+function initMap() {
+    // Check if map container exists and Leaflet is loaded
+    const mapElement = document.getElementById('logistics-map');
+    if (!mapElement || typeof L === 'undefined') {
+        console.error("Map container or Leaflet library not found.");
+        if (mapElement) mapElement.innerHTML = '<p class="text-center text-red-500">Error loading map.</p>';
+        return;
+    }
+
+    // Prevent re-initialization
+    if (mapInstance) {
+        mapInstance.remove();
+        mapInstance = null;
+    }
+
+    // Initialize the map - Center around Southern Ontario
+    mapInstance = L.map('logistics-map').setView([43.7, -79.4], 8);
+
+    // Add a tile layer (OpenStreetMap)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(mapInstance);
+
+    // Add markers for each location
+    locations.forEach(loc => {
+        let iconUrl = loc.type === 'Warehouse' ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png' : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
+        let shadowUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png';
+
+        let customIcon = L.icon({
+            iconUrl: iconUrl,
+            shadowUrl: shadowUrl,
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        const marker = L.marker([loc.lat, loc.lng], {icon: customIcon}).addTo(mapInstance);
+
+        // Create popup content
+        let popupContent = `<div class="font-semibold text-base mb-2">${loc.name} <span class="text-xs font-normal text-gray-500">(${loc.type})</span></div>`;
+        popupContent += '<ul class="space-y-1 text-sm">';
+        if (loc.type === 'Warehouse') {
+            popupContent += `<li><strong>Capacity:</strong> ${loc.details.capacity}</li>`;
+            popupContent += `<li><strong>Inbound Today:</strong> ${loc.details.inbound} shipments</li>`;
+            popupContent += `<li><strong>Outbound Today:</strong> ${loc.details.outbound} shipments</li>`;
+            popupContent += `<li><strong>Alerts:</strong> <span class="text-yellow-600">${loc.details.issues}</span></li>`;
+        } else { // Store
+            popupContent += `<li><strong>Inventory Value:</strong> ${loc.details.inventoryValue}</li>`;
+            popupContent += `<li><strong>Stock Alerts:</strong> <span class="${loc.details.stockAlerts > 0 ? 'text-red-600 font-semibold' : ''}">${loc.details.stockAlerts}</span></li>`;
+            popupContent += `<li><strong>Next Delivery:</strong> ${loc.details.nextDelivery}</li>`;
+        }
+        popupContent += '</ul>';
+
+        marker.bindPopup(popupContent);
+    });
+
+    // Fit map bounds to markers
+    const group = L.featureGroup(locations.map(loc => L.marker([loc.lat, loc.lng])));
+    mapInstance.fitBounds(group.getBounds().pad(0.1)); // Add padding
+}
+
 
 function addLogisticsEventListeners() {
     document.getElementById('log-adjustment-btn')?.addEventListener('click', showLogAdjustmentModal);
-    
+
     document.querySelectorAll('.action-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const action = e.target.dataset.action;
@@ -250,6 +341,12 @@ function showLogAdjustmentModal() {
         </form>
     `;
     showModal('Log Inventory Adjustment', modalBody);
+    // Add submit handler if needed
+    document.getElementById('log-adjustment-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        showToast('Inventory adjustment logged.');
+        hideModal(); // Use imported hideModal
+    });
 }
 
 function showCompareRatesModal(orderId) {
@@ -274,11 +371,15 @@ function showCompareRatesModal(orderId) {
                 </div>
             </div>
              <div class="text-right pt-2">
-                 <button class="bg-green-600 text-white py-2 px-5 rounded-lg hover:bg-green-700">Select Canpar & Ship</button>
+                 <button id="select-carrier-btn" class="bg-green-600 text-white py-2 px-5 rounded-lg hover:bg-green-700">Select Canpar & Ship</button>
             </div>
         </div>
     `;
-    showModal(`Compare Shipping Rates`, modalBody);
+    showModal(`Compare Shipping Rates for ${orderId}`, modalBody);
+    document.getElementById('select-carrier-btn')?.addEventListener('click', () => {
+         showToast(`Order ${orderId} scheduled for shipment via Canpar.`);
+         hideModal(); // Use imported hideModal
+    });
 }
 
 export { render as init };
