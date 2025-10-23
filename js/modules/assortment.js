@@ -256,8 +256,14 @@ async function render(container) {
                 <div id="allocation-table-container">
                     ${renderAllocationTable()}
                 </div>
-                <div class="mt-6 text-center">
-                    <button id="export-excel-btn" class="flex items-center space-x-2 text-sm bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 mx-auto">
+                <div class="mt-6 flex justify-start items-center space-x-3">
+                    <button id="save-plan-btn" class="text-sm bg-gray-600 text-white py-2 px-5 rounded-lg hover:bg-gray-700">
+                       Save
+                    </button>
+                    <button id="submit-plan-btn" class="text-sm bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700">
+                       Submit and Send
+                    </button>
+                    <button id="export-excel-btn" class="flex items-center space-x-2 text-sm bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                        <span>Export to Excel</span>
                     </button>
@@ -270,6 +276,7 @@ async function render(container) {
     animateInfographics();
     updateBudgetDisplay();
     updateStoreTotals();
+    updateProductTotals(); // Add call here
     initializeCharts(); // Initialize all charts
 }
 
@@ -486,6 +493,12 @@ function renderAllocationTable() {
              <td class="sticky right-0 bg-white hover:bg-gray-50 px-4 py-2 whitespace-nowrap text-sm font-bold text-gray-800 text-center store-total">0</td>
         </tr>
     `).join('');
+
+    // Footer row for product totals
+    const footerCells = purchasePlan.map(p => `
+        <td class="px-2 py-2 text-center text-sm font-bold product-total-cell" data-product-id="${p.id}">0</td>
+    `).join('');
+
     return `
         <div class="overflow-auto max-h-[600px] border rounded-lg">
             <table class="min-w-full divide-y divide-gray-200">
@@ -493,10 +506,17 @@ function renderAllocationTable() {
                     <tr>
                         <th class="sticky left-0 top-0 z-20 px-4 py-3 bg-gray-100 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Store</th>
                         ${header}
-                         <th class="sticky right-0 top-0 z-20 px-4 py-3 bg-gray-100 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">Total</th>
+                         <th class="sticky right-0 top-0 z-20 px-4 py-3 bg-gray-100 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">Store Total</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">${rows}</tbody>
+                <tfoot class="bg-gray-100 border-t-2 border-gray-300">
+                    <tr>
+                        <td class="sticky left-0 bg-gray-100 px-4 py-2 text-sm font-bold text-gray-800">Total Units</td>
+                        ${footerCells}
+                        <td class="sticky right-0 bg-gray-100 px-4 py-2 text-center text-sm font-bold text-gray-800" id="grand-total-cell">0</td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     `;
@@ -541,7 +561,7 @@ function initializeCharts() {
 }
 
 
-// --- CALCULATION & UPDATE FUNCTIONS --- (Remain the same)
+// --- CALCULATION & UPDATE FUNCTIONS ---
 function calculatePlanCost() {
     const allocationTable = document.getElementById('allocation-table-container');
     if (!allocationTable) return 0;
@@ -600,6 +620,33 @@ function updateStoreTotals() {
     });
 }
 
+// --- New Function to Update Product Totals ---
+function updateProductTotals() {
+    const tableContainer = document.getElementById('allocation-table-container');
+    if (!tableContainer) return;
+
+    let grandTotal = 0;
+    purchasePlan.forEach(product => {
+        const inputs = tableContainer.querySelectorAll(`.allocation-input[data-product-id="${product.id}"]`);
+        let productTotal = 0;
+        inputs.forEach(input => {
+            productTotal += parseInt(input.value, 10) || 0;
+        });
+
+        const totalCell = tableContainer.querySelector(`tfoot .product-total-cell[data-product-id="${product.id}"]`);
+        if (totalCell) {
+            totalCell.textContent = productTotal;
+        }
+        grandTotal += productTotal;
+    });
+
+    // Update Grand Total Cell
+    const grandTotalCell = document.getElementById('grand-total-cell');
+    if (grandTotalCell) {
+        grandTotalCell.textContent = grandTotal;
+    }
+}
+
 
 function updateAcceptAISuggestionsButtonState() {
     const acceptBtn = document.getElementById('accept-ai-suggestions-btn');
@@ -623,6 +670,8 @@ function addEventListeners() {
         const seeMoreBtn = e.target.closest('.see-more-trends-btn');
         const productItem = e.target.closest('.product-grid-item');
         const budgetReqBtn = e.target.closest('#request-budget-increase-btn');
+        const saveBtn = e.target.closest('#save-plan-btn'); // Added this
+        const submitBtn = e.target.closest('#submit-plan-btn'); // Added this
         const isActionableClick = e.target.closest('.add-to-plan-btn, .ai-suggestion-icon-wrapper, .ai-quantity-suggestion, a, button, canvas'); // Added canvas
 
         if (addBtn) {
@@ -635,6 +684,10 @@ function addEventListeners() {
             handleSeeMoreTrendsClick(seeMoreBtn); // Updated handler
         } else if (budgetReqBtn) {
             showToast('Budget increase request sent to management for approval.');
+        } else if (saveBtn) { // Added this block
+            showToast('Purchase plan saved.');
+        } else if (submitBtn) { // Added this block
+            showToast('Purchase plan submitted and sent for approval.');
         } else if (productItem && !isActionableClick) {
             handleProductExpand(productItem);
         } else {
@@ -645,7 +698,7 @@ function addEventListeners() {
         }
     });
 
-    // --- Hover Listeners --- (Remain the same)
+    // --- Hover Listeners ---
      moduleContainer.addEventListener('mouseover', (e) => {
         const productAiIcon = e.target.closest('.ai-suggestion-icon-wrapper');
         const allocationAiIcon = e.target.closest('.ai-quantity-suggestion');
@@ -670,20 +723,21 @@ function addEventListeners() {
     });
 
 
-    // --- Input Listener --- (Remain the same)
+    // --- Input Listener ---
      moduleContainer.addEventListener('input', (e) => {
         if (e.target.matches('.allocation-input')) {
             updateBudgetDisplay();
             updateStoreTotals();
+            updateProductTotals(); // Add call here
         }
     });
 
-    // --- Change Listener --- (Remain the same)
+    // --- Change Listener ---
     moduleContainer.addEventListener('change', handleFilterChange);
 }
 
 
-// --- HANDLER FUNCTIONS --- (FilterChange, ProductListClick, ProductExpand, AcceptAISuggestions, ExportExcel remain mostly the same)
+// --- HANDLER FUNCTIONS ---
 function handleFilterChange(e) {
     const target = e.target;
     if (target.matches('.filter-select') || target.matches('.filter-checkbox')) {
@@ -713,11 +767,12 @@ function handleProductListClick(button) {
             showToast(`${product.name} added to plan.`);
         }
     }
-
+    // Re-render table and update totals
     document.getElementById('allocation-table-container').innerHTML = renderAllocationTable();
     updateAcceptAISuggestionsButtonState();
     updateBudgetDisplay();
     updateStoreTotals();
+    updateProductTotals(); // Add call here
 }
 
 function handleProductExpand(clickedItem) {
@@ -747,6 +802,7 @@ function handleAcceptAISuggestionsClick() {
     showToast('All AI suggestions have been applied.');
     updateBudgetDisplay();
     updateStoreTotals();
+    updateProductTotals(); // Add call here
 }
 
 function handleExportExcelClick() {
@@ -757,12 +813,12 @@ function handleExportExcelClick() {
 
     let csvContent = "data:text/csv;charset=utf-8,";
     const allocationTable = document.getElementById('allocation-table-container');
-    const headers = ['Store', ...purchasePlan.map(p => `"${p.name}"`), 'Total'];
+    const headers = ['Store', ...purchasePlan.map(p => `"${p.name}"`), 'Store Total'];
     csvContent += headers.join(',') + '\r\n';
 
     const inputs = Array.from(allocationTable.querySelectorAll('input[type="number"]'));
 
-    stores.slice(0, 10).forEach(store => {
+    stores.forEach(store => { // Export all stores, not just first 10
         const row = [`"${store.name}"`];
         let rowTotal = 0;
         purchasePlan.forEach(product => {
@@ -774,6 +830,19 @@ function handleExportExcelClick() {
         row.push(rowTotal);
         csvContent += row.join(',') + '\r\n';
     });
+
+    // Add Product Totals Row
+    const productTotalsRow = ['"Total Units"'];
+    let grandTotal = 0;
+    purchasePlan.forEach(product => {
+        const productTotalCell = allocationTable.querySelector(`tfoot .product-total-cell[data-product-id="${product.id}"]`);
+        const total = productTotalCell ? parseInt(productTotalCell.textContent, 10) : 0;
+        productTotalsRow.push(total);
+        grandTotal += total;
+    });
+    productTotalsRow.push(grandTotal); // Add grand total at the end
+    csvContent += productTotalsRow.join(',') + '\r\n';
+
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -844,7 +913,7 @@ function handleSeeMoreTrendsClick(button) {
 }
 
 
-// --- AI REASONING HOVER FUNCTIONS --- (Remain the same)
+// --- AI REASONING HOVER FUNCTIONS ---
 function renderReasoningCard(product) {
     if (!product.aiReasoning) {
         return `<div class="reasoning-card"><p class="p-4">No AI analysis available for this product.</p></div>`;
