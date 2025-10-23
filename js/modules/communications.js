@@ -33,7 +33,7 @@ function init() {
         if (e.key === 'Enter') handleSendMessage();
     });
     userPillsContainer.addEventListener('click', handlePersonaChange);
-    
+
     // Initialize the mode toggle functionality (event listeners only)
     initModeToggle();
 
@@ -42,7 +42,7 @@ function init() {
     if (initialActivePill) {
         currentPersona = initialActivePill.dataset.persona;
     }
-    
+
     // Pre-populate all conversations and mark them as unread to show notification dots on load
     initializeAllConversations();
 }
@@ -59,11 +59,12 @@ function initializeAllConversations() {
                 welcomeMessage = "Hello! I'm SalesBuddy. I can help you manage tasks, get insights, and more. How can I help?";
             }
             conversationHistories[persona] = [{
-                role: "assistant",
+                // FIX: Use 'model' role for initial assistant messages
+                role: "model",
                 parts: [{ text: welcomeMessage }]
             }];
         }
-        
+
         // A conversation is only unread if it's not the currently active one
         if (!isActive) {
             unreadStatus[persona] = true;
@@ -97,7 +98,7 @@ function toggleChatPopup() {
 
 function initModeToggle() {
     if (!modeToggle) return;
-    
+
     modeToggle.addEventListener('click', (e) => {
         const clickedButton = e.target.closest('.chat-mode-btn');
         if (clickedButton) {
@@ -108,22 +109,22 @@ function initModeToggle() {
 
 function setActiveButton(buttonEl) {
     if (!buttonEl || !modeToggle) return;
-    
+
     const slider = document.getElementById('chat-mode-slider');
     const buttons = modeToggle.querySelectorAll('.chat-mode-btn');
-    
+
     // Check for visibility. If not visible, we can't calculate position.
     if (buttonEl.offsetWidth === 0) return;
 
     buttons.forEach(btn => btn.classList.remove('active'));
     buttonEl.classList.add('active');
-    
+
     // The slider is positioned relative to the toggle container.
     // We calculate the button's left position relative to the container and subtract the slider's own starting offset.
     const containerPadding = 4; // Corresponds to p-1 in Tailwind
     slider.style.width = `${buttonEl.offsetWidth}px`;
     slider.style.transform = `translateX(${buttonEl.offsetLeft - containerPadding}px)`;
-    
+
     chatInput.placeholder = `Type your ${buttonEl.dataset.mode}...`;
 }
 
@@ -142,7 +143,7 @@ function switchPersona(persona, pillElement) {
     const currentActivePill = userPillsContainer.querySelector('.user-pill.active');
     if(currentActivePill) currentActivePill.classList.remove('active');
     pillElement.classList.add('active');
-    
+
     markConversationAsRead(persona);
     renderConversation();
 }
@@ -151,6 +152,7 @@ function renderConversation() {
     chatWindow.innerHTML = '';
     const history = conversationHistories[currentPersona] || [];
     history.forEach(message => {
+        // FIX: Check for 'model' role when determining message type
         const messageType = message.role === 'user' ? 'sent' : 'received';
         addMessageToChat(message.parts[0].text, messageType);
     });
@@ -194,6 +196,11 @@ async function handleSendMessage() {
     const messageText = chatInput.value.trim();
     if (messageText === '') return;
 
+    // Ensure history exists
+     if (!conversationHistories[currentPersona]) {
+        conversationHistories[currentPersona] = [];
+    }
+
     // Command Parsing for task creation
     const lowerCaseMessage = messageText.toLowerCase();
     if ((lowerCaseMessage.startsWith("create task") || lowerCaseMessage.startsWith("add task") || lowerCaseMessage.startsWith("new task")) && currentPersona === 'AI Assistant') {
@@ -206,30 +213,28 @@ async function handleSendMessage() {
                 dueDate: new Date().toISOString().slice(0, 10),
                 priority: 'Medium'
             });
-            
+
             addMessageToChat(messageText, 'sent');
             const confirmation = `Okay, I've added the task: "${newTask.task}". You can see it in the Operations module.`;
             addMessageToChat(confirmation, 'received');
-            
+
             if (window.location.hash.substring(1) === 'operations') {
                 reRenderOpsBoard(newTask.id);
             } else {
                 showToast("New task created in Operations module!");
             }
-            
+
             conversationHistories[currentPersona].push({ role: 'user', parts: [{ text: messageText }]});
-            conversationHistories[currentPersona].push({ role: 'assistant', parts: [{ text: confirmation }]});
+            // FIX: Use 'model' role for assistant responses
+            conversationHistories[currentPersona].push({ role: 'model', parts: [{ text: confirmation }]});
 
             chatInput.value = '';
             scrollToBottom();
-            return; 
+            return;
         }
     }
 
     // Add user message to history and UI
-    if (!conversationHistories[currentPersona]) {
-        conversationHistories[currentPersona] = [];
-    }
     conversationHistories[currentPersona].push({ role: 'user', parts: [{ text: messageText }] });
     addMessageToChat(messageText, 'sent');
     chatInput.value = '';
@@ -237,20 +242,29 @@ async function handleSendMessage() {
 
     const receivingPersona = currentPersona;
     const loadingBubble = addMessageToChat('', 'received-loading');
-    
+
     // Get current module for contextual responses
     const currentModuleId = window.location.hash.substring(1) || 'assortment-planning';
 
+    // Prepare history for API call (ensure only user/model roles)
+    // The API function will handle adding the system prompt separately
+    const historyForAPI = conversationHistories[receivingPersona].filter(
+        msg => msg.role === 'user' || msg.role === 'model'
+    );
+
+
     try {
-        const responseText = await callGeminiAPI(receivingPersona, conversationHistories[receivingPersona], { moduleId: currentModuleId });
-        
-        conversationHistories[receivingPersona].push({ role: 'assistant', parts: [{ text: responseText }] });
-        
+        // Pass the filtered history to the API call
+        const responseText = await callGeminiAPI(receivingPersona, historyForAPI, { moduleId: currentModuleId });
+
+        // FIX: Use 'model' role when adding the response to history
+        conversationHistories[receivingPersona].push({ role: 'model', parts: [{ text: responseText }] });
+
         if (receivingPersona === currentPersona) {
              loadingBubble.classList.remove('received-loading');
              loadingBubble.innerHTML = responseText;
         }
-       
+
         setConversationAsUnread(receivingPersona);
 
     } catch (error) {
@@ -259,21 +273,24 @@ async function handleSendMessage() {
             loadingBubble.classList.remove('received-loading');
             loadingBubble.textContent = "Sorry, I encountered an error. Please try again.";
         }
+         // Optionally add an error message to history
+         // conversationHistories[receivingPersona].push({ role: 'model', parts: [{ text: "Error connecting. Please try again." }] });
     }
-    
+
     scrollToBottom();
 }
 
 function addMessageToChat(text, type) {
     const bubble = document.createElement('div');
     bubble.className = `message-bubble ${type}`;
-    
+
     if (type === 'received-loading') {
         bubble.innerHTML = `<div class="spinner-dots-small"><div></div><div></div><div></div></div>`;
     } else {
-        bubble.innerHTML = text;
+        // Basic Markdown-like formatting for bold text **text** -> <strong>text</strong>
+        bubble.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     }
-    
+
     chatWindow.appendChild(bubble);
     return bubble;
 }
@@ -287,11 +304,13 @@ function triggerProactiveMessage(message, persona = 'AI Assistant') {
         conversationHistories[persona] = [];
     }
     // Avoid adding duplicate proactive messages
-    if (conversationHistories[persona].some(m => m.parts[0].text === message && m.role === 'assistant')) {
+    // FIX: Check for 'model' role
+    if (conversationHistories[persona].some(m => m.parts[0].text === message && m.role === 'model')) {
         return;
     }
 
-    conversationHistories[persona].push({ role: 'assistant', parts: [{ text: message }] });
+    // FIX: Use 'model' role for proactive messages
+    conversationHistories[persona].push({ role: 'model', parts: [{ text: message }] });
     setConversationAsUnread(persona);
 }
 

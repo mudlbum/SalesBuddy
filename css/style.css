@@ -10,7 +10,7 @@ body {
 }
 
 .sidebar-icon.active {
-    background-color: #3b82f6; /* bg-blue-500 */
+    background-color: #ec4a4a; /* bg-blue-500 */
     color: white;
 }
 
@@ -91,41 +91,124 @@ body {
 }
 
 
-/* --- AI Suggestion Balloon --- */
+/* --- AI Suggestion Balloon & Popups --- */
 #ai-balloon-container {
-    position: fixed;
-    z-index: 1001; /* Higher than modal overlay */
+    position: absolute; /* Changed from fixed for better positioning relative to trigger */
+    z-index: 1001;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease-in-out;
+    /* Removed fixed positioning styles like top/left */
 }
 
-#ai-balloon-content {
+/* Base style shared by popups */
+.reasoning-card,
+.allocation-reasoning-popup {
     background-color: white;
-    padding: 1rem;
     border-radius: 0.75rem;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     border: 1px solid #e5e7eb;
-    max-width: 350px;
     font-size: 0.875rem;
     line-height: 1.5;
     color: #374151;
     animation: balloon-pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
+
+/* Specific styles for the main reasoning card */
+.reasoning-card {
+     padding: 1rem;
+     max-width: 450px; /* Increased width */
+     min-width: 400px; /* Ensure minimum width */
+}
+
+.reasoning-card-title {
+    font-size: 0.875rem; /* 14px */
+    font-weight: 600;
+    color: #1f2937; /* gray-800 */
+    margin-bottom: 0.25rem; /* 4px */
+    white-space: nowrap; /* Prevent title wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.reasoning-card-subtitle {
+    font-size: 0.75rem; /* 12px */
+    color: #6b7280; /* gray-500 */
+    margin-bottom: 0.75rem; /* 12px */
+}
+
+.reasoning-factors-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Two columns */
+    gap: 0.75rem; /* 12px */
+}
+
+.reasoning-factor {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem; /* 8px */
+}
+
+.factor-icon {
+    font-size: 1rem; /* 16px */
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.factor-details {
+    flex-grow: 1;
+}
+
+.factor-title {
+    font-size: 0.75rem; /* 12px */
+    font-weight: 500;
+    color: #4b5563; /* gray-600 */
+    margin-bottom: 0.25rem; /* 4px */
+}
+
+.factor-chart-bar-container {
+    width: 100%;
+    background-color: #e5e7eb; /* gray-200 */
+    border-radius: 9999px;
+    height: 6px;
+    margin-bottom: 0.25rem; /* 4px */
+    overflow: hidden; /* Ensure bar stays within container */
+}
+
+.factor-chart-bar {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.5s ease-out; /* Animate the bar */
+}
+
+.factor-text {
+    font-size: 0.7rem; /* Smaller text */
+    color: #6b7280; /* gray-500 */
+    line-height: 1.3;
+}
+
+/* Specific styles for allocation reasoning popup */
+.allocation-reasoning-popup {
+    padding: 0.75rem;
+    max-width: 220px;
+    font-size: 0.75rem; /* Smaller base font size */
+}
+
+
 @keyframes balloon-pop-in {
     0% {
-        transform: scale(0.9);
+        transform: scale(0.9) translateY(5px);
     }
     100% {
-        transform: scale(1);
+        transform: scale(1) translateY(0);
     }
 }
 
 
 .spinner {
     border: 4px solid #f3f3f3; /* Light grey */
-    border-top: 4px solid #3b82f6; /* Blue */
+    border-top: 4px solid #f63b3b; /* Blue */
     border-radius: 50%;
     width: 30px;
     height: 30px;
@@ -164,7 +247,7 @@ body {
 }
 
 .chat-icon-button {
-    background-color: #3b82f6;
+    background-color: #f63b3b;
     color: white;
     width: 60px;
     height: 60px;
@@ -194,7 +277,7 @@ body {
 
 .chat-icon-button:hover {
     transform: scale(1.1);
-    background-color: #2563eb;
+    background-color: #eb2525;
 }
 
 .chat-icon-button .close-icon {
@@ -252,12 +335,12 @@ body {
 }
 
 .chat-mode-btn {
-    color: #6b7280; 
+    color: #6b7280;
     transition: color 0.3s ease-in-out;
 }
 
 .chat-mode-btn.active {
-    color: #3b82f6; 
+    color: #f63b3b;
 }
 
 .chat-user-pills {
@@ -293,7 +376,7 @@ body {
     right: 6px;
     width: 8px;
     height: 8px;
-    background-color: #3b82f6;
+    background-color: #f63b3b;
     border-radius: 50%;
     border: 1px solid #f9fafb;
 }
@@ -304,7 +387,7 @@ body {
 }
 
 .user-pill.active {
-    background-color: #3b82f6;
+    background-color: #f63b3b;
     color: white;
     font-weight: 600;
     box-shadow: 0 4px 10px -2px rgba(59, 130, 246, 0.4);
@@ -331,7 +414,7 @@ body {
 }
 
 .message-bubble.sent {
-    background-color: #3b82f6;
+    background-color: #f63b3b;
     color: white;
     border-bottom-right-radius: 0.5rem;
     align-self: flex-end;
@@ -367,13 +450,13 @@ body {
 }
 
 .chat-input:focus {
-    border-color: #3b82f6;
+    border-color: #f63b3b;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .chat-send-btn {
     margin-left: 0.5rem;
-    background-color: #3b82f6;
+    background-color: #f63b3b;
     color: white;
     border: none;
     cursor: pointer;
@@ -387,7 +470,7 @@ body {
 }
 
 .chat-send-btn:hover {
-    background-color: #2563eb;
+    background-color: #f18686;
 }
 
 /* --- Toast Notification Styles --- */
@@ -442,46 +525,126 @@ body {
 
 
 /* --- Assortment Planner Specific Styles --- */
-.trend-infographic .bg-blue-500 { transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1); }
-.trend-infographic .bg-green-500 { transition: width 0.9s cubic-bezier(0.25, 1, 0.5, 1); }
-.trend-infographic .bg-purple-500 { transition: width 1.0s cubic-bezier(0.25, 1, 0.5, 1); }
-.trend-infographic .bg-pink-500 { transition: width 1.1s cubic-bezier(0.25, 1, 0.5, 1); }
-.trend-infographic .bg-yellow-500 { transition: width 1.2s cubic-bezier(0.25, 1, 0.5, 1); }
+
+/* Trend Dashboard Grid Layout */
+#trend-dashboard .grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr); /* 6 columns layout */
+    gap: 1rem;
+}
+
+/* First 6 items take 1 column each */
+#trend-dashboard .grid > div {
+    grid-column: span 1 / span 1;
+}
+
+/* Last two items (graphs) take 3 columns each, forcing them to the next row */
+#trend-dashboard .grid > div:nth-last-child(1), /* Sales Prediction */
+#trend-dashboard .grid > div:nth-last-child(2)  /* Economic Indicator */
+{
+    grid-column: span 3 / span 3;
+}
+
+/* Ensure canvas height is sufficient for the larger graph cards */
+#trend-dashboard .grid > div:nth-last-child(1) .h-\[100px\],
+#trend-dashboard .grid > div:nth-last-child(2) .h-\[100px\] {
+    height: 180px; /* Increased height */
+}
+
+/* Budget Dashboard Layout - Updated for Two Rows */
+#budget-dashboard {
+    display: flex; /* Use flexbox for overall section layout */
+    flex-direction: column;
+    gap: 1.5rem; /* Space between the two rows */
+}
+
+/* Container for the top row (KPIs + Progress Bar) */
+#budget-top-row {
+     /* Takes up space needed */
+}
+
+/* Container for the bottom row (Graph) */
+#budget-bottom-row {
+    background-color: #f9fafb; /* Slightly different background for visual separation */
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+}
+
+/* Style the KPI grid within the top row */
+#budget-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on small screens */
+    gap: 1rem;
+    text-align: center;
+    margin-bottom: 1rem; /* Space before progress bar */
+}
+@media (min-width: 768px) { /* md breakpoint */
+     #budget-kpi-grid {
+        grid-template-columns: repeat(4, 1fr); /* 4 columns on medium screens */
+    }
+}
+
+/* Style the progress bar container */
+#budget-progress-container {
+    width: 100%;
+    background-color: #e5e7eb; /* gray-200 */
+    border-radius: 9999px;
+    height: 1rem; /* h-4 */
+    overflow: hidden; /* Ensure progress bar stays within bounds */
+}
+
+#budget-progress-bar {
+    background-color: #f63b3b; /* bg-blue-600 */
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.5s ease-out; /* Animate width change */
+}
+
+
+/* Style the graph container in the bottom row */
+#budget-history-graph-container {
+    height: 200px; /* Increased height for the graph */
+}
+@media (min-width: 1024px) { /* lg breakpoint */
+     #budget-history-graph-container {
+        height: 250px; /* Even taller on large screens */
+    }
+}
+
+/* Ensure infographic bars animate */
+.trend-infographic [data-width] { transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1); }
 
 .product-grid-view {
     display: grid;
     gap: 1rem;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    padding-bottom: 220px; /* Space for last row to expand */
+    padding-bottom: 120px; /* Space for last row to expand */
 }
 
-/* Placeholder to maintain grid structure. Height should match unexpanded card. */
 .product-grid-item {
     position: relative;
-    /* Original card: 0.75rem padding (12px * 2) + 64px image height = 88px. Add buffer. */
     height: 90px;
     cursor: pointer;
 }
 
-/* Visual card that will expand */
 .product-card-content {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 90px; /* Match placeholder */
+    height: 90px;
     background-color: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
-    padding: 0.75rem; /* Match original */
+    padding: 0.75rem;
     display: flex;
-    flex-direction: column; 
+    flex-direction: column;
     overflow: hidden;
     transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
     z-index: 1;
 }
 
-/* Hover effect on the placeholder */
 .product-grid-item:hover .product-card-content {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px -1px rgba(0,0,0,0.1), 0 2px 8px -1px rgba(0,0,0,0.06);
@@ -495,21 +658,20 @@ body {
     flex-shrink: 0;
 }
 
-/* Styles for the expanded state */
 .product-grid-item.expanded .product-card-content {
     height: 400px;
     background-color: #f9fafb;
-    border-color: #6366f1;
-    z-index: 10; /* Bring to front */
+    border-color: #f19763;
+    z-index: 10;
     box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.2);
-    padding: 1rem; /* Slightly larger padding on expand */
+    padding: 1rem;
 }
 
 .product-thumbnail {
     position: relative;
     flex-shrink: 0;
-    width: 64px; /* Match original */
-    height: 64px; /* Match original */
+    width: 64px;
+    height: 64px;
     margin-right: 1rem;
     transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
@@ -523,16 +685,12 @@ body {
 .product-thumbnail img {
     width: 100%;
     height: 100%;
-    border-radius: 0.5rem; 
+    border-radius: 0.5rem;
     object-fit: cover;
 }
 
-.product-details {
-    flex-grow: 1;
-}
-
+.product-details { flex-grow: 1; }
 .product-details h4 {
-    /* from original */
     font-size: 0.875rem;
     font-weight: 600;
     color: #1f2937;
@@ -540,45 +698,13 @@ body {
     line-height: 1.2;
     transition: font-size 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
-
-.product-grid-item.expanded .product-details h4 {
-    font-size: 1rem;
-    line-height: 1.4;
-}
-
-.specs {
-    font-size: 0.75rem;
-    color: #6b7280;
-    margin-top: 0; 
-}
-
-.product-grid-item.expanded .specs {
-    margin-top: 0.25rem;
-}
-
-
-.product-actions {
-    margin-top: 0.25rem; 
-    display: flex;
-    align-items: center;
-}
-
-.product-grid-item.expanded .product-actions {
-    margin-top: 0.5rem;
-}
-
-
-.price {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #111827;
-    transition: font-size 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
-}
-
-.product-grid-item.expanded .price {
-    font-size: 1rem;
-    font-weight: 600;
-}
+.product-grid-item.expanded .product-details h4 { font-size: 1rem; line-height: 1.4; }
+.specs { font-size: 0.75rem; color: #6b7280; margin-top: 0; }
+.product-grid-item.expanded .specs { margin-top: 0.25rem; }
+.product-actions { margin-top: 0.25rem; display: flex; align-items: center; }
+.product-grid-item.expanded .product-actions { margin-top: 0.5rem; }
+.price { font-size: 0.875rem; font-weight: 500; color: #111827; transition: font-size 0.5s cubic-bezier(0.165, 0.84, 0.44, 1); }
+.product-grid-item.expanded .price { font-size: 1rem; font-weight: 600; }
 
 .ai-suggestion-icon-wrapper {
     position: relative;
@@ -588,358 +714,161 @@ body {
     color: #ff9100;
     margin-left: 0.5rem;
 }
-
-.ai-suggestion-icon-svg {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-.ai-suggestion-icon-wrapper:hover .ai-suggestion-icon-svg {
-    transform: scale(1.1);
-}
+.ai-suggestion-icon-svg { width: 20px; height: 20px; cursor: pointer; transition: transform 0.2s; }
+.ai-suggestion-icon-wrapper:hover .ai-suggestion-icon-svg { transform: scale(1.1); }
 
 .add-to-plan-btn {
-    margin-left: auto;
-    flex-shrink: 0;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.7rem;
-    font-weight: 500;
-    border-radius: 0.3rem;
-    border: 1px solid #d1d5db;
-    background-color: #fff;
-    color: #3b82f6;
-    cursor: pointer;
-    transition: all 0.2s;
+    margin-left: auto; flex-shrink: 0; padding: 0.25rem 0.5rem; font-size: 0.7rem; font-weight: 500; border-radius: 0.3rem; border: 1px solid #d1d5db; background-color: #fff; color: #3b82f6; cursor: pointer; transition: all 0.2s;
 }
+.add-to-plan-btn:hover:not(:disabled) { background-color: #eff6ff; border-color: #3b82f6; }
+.add-to-plan-btn.added { color: #10b981; background-color: #ecfdf5; border-color: #10b981; }
 
-.add-to-plan-btn:hover:not(:disabled) {
-    background-color: #eff6ff;
-    border-color: #3b82f6;
-}
-
-.add-to-plan-btn.added {
-    color: #10b981;
-    background-color: #ecfdf5;
-    border-color: #10b981;
-}
-
-/* Expanded Details Styles */
 .product-expanded-details {
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(10px);
-    transition: opacity 0.4s ease-out 0.2s, transform 0.4s ease-out 0.2s, visibility 0s 0.6s;
-    padding-top: 1.25rem;
-    display: flex;
-    width: 100%;
-    gap: 1.5rem;
+    opacity: 0; visibility: hidden; transform: translateY(10px); transition: opacity 0.4s ease-out 0.2s, transform 0.4s ease-out 0.2s, visibility 0s 0.6s; padding-top: 1.25rem; display: flex; width: 100%; gap: 1.5rem;
 }
-
-.product-grid-item.expanded .product-expanded-details {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-    transition: opacity 0.4s ease-out 0.2s, transform 0.4s ease-out 0.2s;
-}
+.product-grid-item.expanded .product-expanded-details { opacity: 1; visibility: visible; transform: translateY(0); transition: opacity 0.4s ease-out 0.2s, transform 0.4s ease-out 0.2s; }
 
 .expanded-info { flex-basis: 50%; }
 .expanded-options { flex-basis: 50%; }
+.expanded-info p, .expanded-options strong { font-size: 0.875rem; color: #4b5563; margin-bottom: 0.5rem; }
+.ai-prediction-score { margin-top: 0.75rem !important; } /* Add margin */
+.size-options { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 1rem; }
+.size-options span { background: #e5e7eb; border-radius: 99px; padding: 0.25rem 0.75rem; font-size: 0.75rem; font-weight: 500; }
+.color-options { display: flex; gap: 0.5rem; align-items: center; }
+.color-swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 1px #d1d5db; }
 
-.expanded-info p, .expanded-options strong {
-    font-size: 0.875rem;
-    color: #4b5563;
-    margin-bottom: 0.5rem;
-}
-
-.size-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-    margin-bottom: 1rem;
-}
-
-.size-options span {
-    background: #e5e7eb;
-    border-radius: 99px;
-    padding: 0.25rem 0.75rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-.color-options {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.color-swatch {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 0 1px #d1d5db;
-}
-
-
+/* Allocation Table */
 .allocation-cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem; position: relative; /* Needed for hover icon */
+}
+.ai-quantity-suggestion {
+    background-color: #f0f9ff; color: #0369a1; font-size: 11px; font-weight: 500; padding: 4px 6px; border-radius: 4px; white-space: nowrap; border: 1px solid #bae6fd; cursor: pointer; /* Make it clickable/hoverable */
+}
+.ai-quantity-suggestion:hover { background-color: #e0f2fe; }
+
+/* Sticky Total Column */
+.allocation-table-container th.sticky.right-0,
+.allocation-table-container td.sticky.right-0 {
+    position: sticky;
+    right: 0;
+    z-index: 10; /* Ensure it's above non-sticky cells */
+}
+.allocation-table-container thead th.sticky.right-0 {
+    z-index: 20; /* Ensure header is above body cells */
 }
 
-.ai-quantity-suggestion {
-    background-color: #f0f9ff;
-    color: #0369a1;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 4px 6px;
-    border-radius: 4px;
-    white-space: nowrap;
-    border: 1px solid #bae6fd;
+/* Trend Detail Modal */
+.trend-detail-popup {
+    padding: 1rem;
 }
+
 
 /* --- Operations Task Styles --- */
-.task-column .task-list {
-    min-height: 150px; /* Ensure drop zone is always present */
-}
-
-.task-column.drag-over {
-    background-color: #eef2ff;
-    border: 2px dashed #a5b4fc;
-}
-.task-card {
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
-    cursor: grab;
-}
-.task-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px -1px rgba(0,0,0,0.1), 0 2px 8px -1px rgba(0,0,0,0.06);
-}
-.task-card.dragging, .planner-task.dragging {
-    opacity: 0.5;
-    transform: rotate(3deg);
-}
-
-.task-card-new {
-    animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-@keyframes pop-in {
-    0% {
-        opacity: 0;
-        transform: scale(0.9);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
+.task-column .task-list { min-height: 150px; }
+.task-column.drag-over { background-color: #eef2ff; border: 2px dashed #a5b4fc; }
+.task-card { transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease; cursor: grab; }
+.task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px -1px rgba(0,0,0,0.1), 0 2px 8px -1px rgba(0,0,0,0.06); }
+.task-card.dragging, .planner-task.dragging { opacity: 0.5; transform: rotate(3deg); }
+.task-card-new { animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+@keyframes pop-in { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
 
 /* --- Planner Styles --- */
-.planner-container {
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    overflow: hidden;
-}
-
-.planner-header {
-    display: grid;
-    grid-template-columns: 60px repeat(7, 1fr);
-    text-align: center;
-    font-size: 0.875rem;
-    background-color: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.planner-day-header {
-    padding: 0.5rem 0.25rem;
-    font-weight: 500;
-}
-
-.planner-day-header.is-today {
-    background-color: #eff6ff;
-}
-
-.planner-day-header .date-number {
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    line-height: 24px;
-    border-radius: 9999px;
-    margin-top: 0.25rem;
-}
-
-.planner-day-header.is-today .date-number {
-    background-color: #3b82f6;
-    color: #fff;
-}
-
-.planner-body-container {
-    display: grid;
-    grid-template-columns: 60px 1fr;
-    overflow-x: auto;
-}
-
-.time-labels {
-    font-size: 0.75rem;
-    color: #6b7280;
-    border-right: 1px solid #e5e7eb;
-    background-color: #f9fafb;
-}
-
-.time-label {
-    height: 50px; /* Corresponds to HOUR_HEIGHT */
-    text-align: center;
-    padding-right: 0.5rem;
-    border-bottom: 1px dashed #e5e7eb;
-}
-
-.time-label:last-child {
-    border-bottom: none;
-}
-
-.planner-days-grid {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(140px, 1fr));
-    flex-grow: 1;
-}
-
-.planner-day-body {
-    position: relative;
-    height: 500px; /* 10 hours * 50px/hour */
-    background-image: linear-gradient(to bottom, #f3f4f6 1px, transparent 1px);
-    background-size: 100% 50px;
-    border-right: 1px solid #e5e7eb;
-}
-
-.planner-day-body:last-child {
-    border-right: none;
-}
-
-.planner-day-body.drag-over {
-    background-color: #dbeafe;
-}
-
-.planner-task {
-    position: absolute;
-    left: 4px;
-    right: 4px;
-    border-radius: 4px;
-    font-size: 11px;
-    overflow: hidden;
-    cursor: grab;
-    transition: opacity 0.3s ease, box-shadow 0.2s ease, transform 0.2s ease;
-    z-index: 10;
-}
-
-.planner-task:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    transform: translateY(-1px);
-    z-index: 15;
-}
-
-.planner-task-content {
-    padding: 4px 6px;
-    pointer-events: none; /* Make sure drag events target the parent */
-}
-
-.planner-task.completed {
-    opacity: 0.6;
-}
-.planner-task.completed .planner-task-content p {
-    text-decoration: line-through;
-}
-.completed-check {
-    color: #16a34a; /* green-600 */
-    font-weight: bold;
-    margin-right: 4px;
-}
-.resize-handle {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 8px;
-    cursor: ns-resize;
-}
-body.resizing {
-    cursor: ns-resize;
-    user-select: none;
-}
-
+.planner-container { border: 1px solid #e5e7eb; border-radius: 0.5rem; overflow: hidden; }
+.planner-header { display: grid; grid-template-columns: 60px repeat(7, 1fr); text-align: center; font-size: 0.875rem; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+.planner-day-header { padding: 0.5rem 0.25rem; font-weight: 500; }
+.planner-day-header.is-today { background-color: #eff6ff; }
+.planner-day-header .date-number { display: inline-block; width: 24px; height: 24px; line-height: 24px; border-radius: 9999px; margin-top: 0.25rem; }
+.planner-day-header.is-today .date-number { background-color: #3b82f6; color: #fff; }
+.planner-body-container { display: grid; grid-template-columns: 60px 1fr; overflow-x: auto; }
+.time-labels { font-size: 0.75rem; color: #6b7280; border-right: 1px solid #e5e7eb; background-color: #f9fafb; }
+.time-label { height: 50px; text-align: center; padding-right: 0.5rem; border-bottom: 1px dashed #e5e7eb; }
+.time-label:last-child { border-bottom: none; }
+.planner-days-grid { display: grid; grid-template-columns: repeat(7, minmax(140px, 1fr)); flex-grow: 1; }
+.planner-day-body { position: relative; height: 500px; background-image: linear-gradient(to bottom, #f3f4f6 1px, transparent 1px); background-size: 100% 50px; border-right: 1px solid #e5e7eb; }
+.planner-day-body:last-child { border-right: none; }
+.planner-day-body.drag-over { background-color: #dbeafe; }
+.planner-task { position: absolute; left: 4px; right: 4px; border-radius: 4px; font-size: 11px; overflow: hidden; cursor: grab; transition: opacity 0.3s ease, box-shadow 0.2s ease, transform 0.2s ease; z-index: 10; }
+.planner-task:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); transform: translateY(-1px); z-index: 15; }
+.planner-task-content { padding: 4px 6px; pointer-events: none; }
+.planner-task.completed { opacity: 0.6; }
+.planner-task.completed .planner-task-content p { text-decoration: line-through; }
+.resize-handle { position: absolute; bottom: 0; left: 0; right: 0; height: 8px; cursor: ns-resize; }
+body.resizing { cursor: ns-resize; user-select: none; }
 
 /* --- Account Menu Styles --- */
-#account-menu-container button {
-    border-radius: 9999px;
-    transition: box-shadow 0.2s;
-}
-
-#account-menu-container button:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
-}
-
-#account-menu {
-    transition: transform 0.1s ease-out, opacity 0.1s ease-out;
-}
-
-#account-menu:not(.hidden) {
-    transform: scale(1) translateY(0);
-    opacity: 1;
-}
-
-#account-menu.hidden {
-    transform: scale(0.95) translateY(-10px);
-    opacity: 0;
-    pointer-events: none;
-}
+#account-menu-container button { border-radius: 9999px; transition: box-shadow 0.2s; }
+#account-menu-container button:focus { outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4); }
+#account-menu { transition: transform 0.1s ease-out, opacity 0.1s ease-out; }
+#account-menu:not(.hidden) { transform: scale(1) translateY(0); opacity: 1; }
+#account-menu.hidden { transform: scale(0.95) translateY(-10px); opacity: 0; pointer-events: none; }
 
 /* --- Module Settings Toggle Switch --- */
-.toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 40px;
-    height: 24px;
+.toggle-switch { position: relative; display: inline-block; width: 40px; height: 24px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+.toggle-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .toggle-slider { background-color: #2563eb; }
+input:checked + .toggle-slider:before { transform: translateX(16px); }
+
+/* --- NEW STYLES --- */
+
+/* Ensure canvas elements fit their containers */
+.trend-infographic canvas,
+#budget-dashboard canvas {
+    max-width: 100%;
+    max-height: 100%;
 }
 
-.toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
+/* Trend Detail Modal Specific */
+.trend-detail-popup canvas {
+    max-width: 100%;
+    max-height: 100%;
 }
 
-.toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 34px;
+/* Allocation Reasoning Popup Styling */
+.allocation-reasoning-popup ul {
+    list-style: none; /* Remove default list styling */
+    padding: 0;
+    margin: 0;
 }
 
-.toggle-slider:before {
-    position: absolute;
-    content: "";
-    height: 16px;
-    width: 16px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
+.allocation-reasoning-popup li {
+    padding: 2px 0;
 }
 
-input:checked + .toggle-slider {
-    background-color: #2563eb;
-}
+/* Budget Dashboard Grid Layout Adjustment */
+@media (min-width: 1024px) { /* lg breakpoint */
+    /* Target the grid containing the top (KPIs) and bottom (graph) rows */
+    #budget-dashboard > .grid {
+        grid-template-columns: 2fr 1fr; /* Make top row take 2/3, graph take 1/3 */
+        align-items: start; /* Align items to the top */
+    }
 
-input:checked + .toggle-slider:before {
-    transform: translateX(16px);
+     /* If #budget-top-row and #budget-bottom-row exist, apply widths */
+     #budget-top-row {
+         grid-column: span 2 / span 2; /* Let top row span full width if needed */
+     }
+     #budget-bottom-row {
+         grid-column: span 2 / span 2; /* Force bottom row below */
+     }
+
+     /* OR If using the direct children approach: */
+     #budget-dashboard > div.mt-4.grid > div:first-child { /* Targets the div containing KPIs/Progress */
+         /* This will naturally take the 2fr width */
+     }
+      #budget-dashboard > div.mt-4.grid > div:last-child { /* Targets the div containing the graph */
+          /* This will naturally take the 1fr width */
+          /* Resetting to stack if the previous approach didn't work */
+         grid-column: span 2 / span 2; /* Ensure it takes full width below */
+         margin-top: 1.5rem; /* Add some space if stacked */
+     }
+
+     /* --- Simplified Stacking Approach (Use this if the above is too complex) --- */
+      #budget-dashboard > div.mt-4.grid {
+        grid-template-columns: 1fr; /* Force stacking on large screens too */
+        gap: 1.5rem;
+     }
+
+
 }
 

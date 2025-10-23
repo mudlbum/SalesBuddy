@@ -53,8 +53,8 @@ function hideModal() {
 
 
 // --- AI SUGGESTION BALLOON ---
-const balloonContainer = document.getElementById('ai-balloon-container'); 
-let hideBalloonTimeout;
+const balloonContainer = document.getElementById('ai-balloon-container');
+let hideBalloonTimeout; // Keep this variable declaration
 
 /**
  * Displays the AI suggestion balloon next to a target element.
@@ -64,37 +64,48 @@ let hideBalloonTimeout;
 function showBalloon(content, targetRect) {
     if (!balloonContainer) return;
 
-    // Clear any pending hide timeouts
+    // Clear any pending hide timeouts if they exist (though we removed the main one)
     if (hideBalloonTimeout) {
         clearTimeout(hideBalloonTimeout);
     }
 
     const balloonContent = document.createElement('div');
-    balloonContent.id = 'ai-balloon-content';
+    // Check if the content is the reasoning card, if so, add the class directly
+    if (content.includes('reasoning-card')) {
+         balloonContent.className = 'reasoning-card'; // Add class directly if it's the reasoning card
+    } else {
+        balloonContent.id = 'ai-balloon-content'; // Keep original ID for other content
+    }
     balloonContent.innerHTML = content;
+
 
     // Clear previous content and add new
     balloonContainer.innerHTML = '';
     balloonContainer.appendChild(balloonContent);
-    
-    // Position the balloon.
-    const top = targetRect.top + window.scrollY - 10;
-    const left = targetRect.left + window.scrollX + (targetRect.width / 2);
-    
+
+    // Position the balloon. Adjust top position slightly higher.
+    const top = targetRect.top + window.scrollY - (balloonContent.offsetHeight + 10); // Position above the icon
+    const left = targetRect.left + window.scrollX + (targetRect.width / 2) - (balloonContent.offsetWidth / 2); // Center horizontally
+
     balloonContainer.style.top = `${top}px`;
     balloonContainer.style.left = `${left}px`;
-    
+
     // Add listener to balloon to keep it open when mouse enters
     balloonContainer.onmouseleave = () => {
         hideBalloon();
     };
-    
+    balloonContainer.onmouseenter = () => { // Keep it open when mouse enters balloon
+        if (hideBalloonTimeout) {
+            clearTimeout(hideBalloonTimeout);
+        }
+    };
+
     // Make it visible
     balloonContainer.style.opacity = '1';
     balloonContainer.style.pointerEvents = 'auto';
 
-    // Set a timeout to hide after a delay
-    hideBalloonTimeout = setTimeout(hideBalloon, 5000); // 5 seconds
+    // REMOVED: The timeout that automatically hides the balloon
+    // hideBalloonTimeout = setTimeout(hideBalloon, 5000); // 5 seconds
 }
 
 /**
@@ -102,15 +113,18 @@ function showBalloon(content, targetRect) {
  */
 function hideBalloon() {
     if (!balloonContainer) return;
-    
+
     balloonContainer.style.opacity = '0';
     balloonContainer.style.pointerEvents = 'none';
     balloonContainer.onmouseleave = null; // Clean up listener
+    balloonContainer.onmouseenter = null; // Clean up listener
+
 
     if (hideBalloonTimeout) {
         clearTimeout(hideBalloonTimeout);
+        hideBalloonTimeout = null; // Reset timeout variable
     }
-    
+
     // Also remove the active class from any icon
     const activeIcon = document.querySelector('.is-showing-balloon');
     if (activeIcon) {
